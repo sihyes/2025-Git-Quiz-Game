@@ -17,7 +17,7 @@ public class Participant {
     private int score;      // 이번 게임의 실시간 점수
 
     public Participant(AppUser user) {
-        this.userId = user.getId();
+        this.userId = user.getId(); //123456765434567545
         this.nickname = user.getNickname();
         this.score = 0; // 게임 시작 시 0점
     }
