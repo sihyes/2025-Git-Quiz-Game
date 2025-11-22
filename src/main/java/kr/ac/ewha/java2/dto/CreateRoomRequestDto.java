@@ -1,20 +1,12 @@
 package kr.ac.ewha.java2.dto;
-
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
 public class CreateRoomRequestDto {
-
-	public String getRoomName() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	public int getQuestionCount() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	public int getTimeLimitPerQuestion() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
+	private String roomName;
+    private Integer questionCount;
+	private Integer timeLimitPerQuestion;
 }
