@@ -7,11 +7,11 @@ import lombok.Getter;
 @Getter
 public class NewQuestionResponseDto {
     //문제 ID
-    private Integer questionId;
+    private Long questionId;
     //문제 내용
     private String questionText;
     public NewQuestionResponseDto(){}
-    public NewQuestionResponseDto(Integer questionId, String questionText){
+    public NewQuestionResponseDto(Long questionId, String questionText){
         this.questionId =  questionId;
         this.questionText = questionText;
     }

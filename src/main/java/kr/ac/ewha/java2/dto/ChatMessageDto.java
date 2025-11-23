@@ -14,7 +14,7 @@ public class ChatMessageDto {
     }
 
     //사용자 ID
-    private Integer userId;
+    private Long userId;
     //보낸 메시지
     private String message;
     //보낸 사람 이름
@@ -22,7 +22,7 @@ public class ChatMessageDto {
     //보낸 시간
     private LocalDateTime timestamp;
     //방 ID
-    private Integer roomId;
+    private Long roomId;
     //메시지 타입
     private MessageType type;
 }

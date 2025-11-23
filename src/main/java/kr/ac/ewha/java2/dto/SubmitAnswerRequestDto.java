@@ -7,14 +7,14 @@ import lombok.Setter;
 @Getter
 public class SubmitAnswerRequestDto {
     //사용자 식별 ID
-    private String participantId;
+    private Long participantId;
     //현재 문제의 Id
     private Integer questionId;
     //사용자가 제출한 정답 내용
     private String submittedAnswer;
 
     public SubmitAnswerRequestDto(){}
-    public SubmitAnswerRequestDto(String participantId, Integer questionId, String submittedAnswer){
+    public SubmitAnswerRequestDto(Long participantId, Integer questionId, String submittedAnswer){
         this.participantId = participantId;
         this.questionId =  questionId;
         this.submittedAnswer = submittedAnswer;
