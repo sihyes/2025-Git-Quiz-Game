@@ -39,7 +39,7 @@ public class GameRoomService {
      * 방 생성 로직
      */
     public GameRoom createRoom(CreateRoomRequestDto request, Long hostId, String hostNickname) {
-        Long roomId = roomIdCounter.getAndIncrement();
+        long roomId = roomIdCounter.getAndIncrement();
         
         // 기본 설정: 문제 5개, 시간 10초
         GameRoom room = new GameRoom(
