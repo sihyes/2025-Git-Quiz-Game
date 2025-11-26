@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+<div class="auth-container">
+    <h2 style="color:#00664F; margin-bottom: 20px;">Git Quiz! 로그인</h2>
+
+    <div class="server-settings">
+        <label for="serverIP">🔌 서버 주소 (IP:Port)</label>
+        <input type="text" id="serverIP" placeholder="예: 192.168.0.5:8080">
+    </div>
+
+    <div class="auth-form">
+        <input type="text" id="userId" placeholder="아이디" required>
+        <input type="password" id="userPw" placeholder="비밀번호" required>
+        <button class="auth-btn" onclick="handleLogin()">로그인 & 접속</button>
+    </div>
+    <p class="switch-link">
+        아직 계정이 없으신가요?
+        <a href="signup.html">회원가입 하기</a>
+    </p>
+</div>
+
+<script>
+    async function handleLogin() {
+        const ip = document.getElementById('serverIP').value;
+        const id = document.getElementById('userId').value;
+        const pw = document.getElementById('userPw').value;
+
+        if (!ip) {
+            alert("서버 IP를 입력해주세요.");
+            return;
+        }
+        
+        if (!id) {
+            alert("아이디를 입력해주세요.");
+            return;
+        }
+        
+        if (!pw) {
+            alert("패스워드를 입력해주세요.");
+            return;
+        }
+
+        // 1. IP와 ID를 세션 스토리지에 저장 (다른 페이지에서 쓰기 위해)
+        sessionStorage.setItem('serverIP', ip);
+        sessionStorage.setItem('userID', id); // 닉네임 대용
+
+        // 2. 서버로 요청 보내보기
+        try {
+            // (1) fetch 요청 시도
+            const response = await fetch(`http://${ip}/api/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id, pw: pw }) // 백엔드 AuthController가 받는 키 이름과 맞춰야 함
+            });
+
+            // (2) 서버 응답 처리
+            if (response.ok) {
+                const result = await response.text();
+                
+                if (result.startsWith("SUCCESS")) {
+                    const nickname = result.split(":")[1];
+                    sessionStorage.setItem('userID', id);
+                    sessionStorage.setItem('nickname', nickname);
+                    
+                    alert("로그인 성공! 환영합니다 😊");
+                    location.href = 'lobby.html'; 
+                } else {
+                    // 서버는 켜져있는데 비번이 틀린 경우
+                    alert("❌ 로그인 실패: " + result); 
+                }
+            } else {
+                // 서버 에러 (500) 또는 경로 없음 (404)
+                alert(`⚠️ 서버 오류 발생 (코드: ${response.status})\n서버 로그를 확인하세요.`);
+            }
+
+        } catch (error) {
+            // (3) 아예 연결조차 안 될 때 (서버 꺼짐, IP 틀림)
+            console.error(error);
+            alert("⛔ 서버에 연결할 수 없습니다.\n\n1. 입력한 IP가 정확한지 확인하세요.\n2. 서버(이클립스)가 켜져있는지 확인하세요.\n3. 같은 와이파이에 접속했는지 확인하세요.");
+        }
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>게임방 - Ctrl+Z</title>
+    <link rel="stylesheet" href="./css/gameroom.css">
+</head>
+
+<body>
+
+<header>
+    <div class="room-title">🎮 방 ID: <span id="dispRoomId"></span></div>
+    <button class="quit-btn" onclick="location.href='lobby.html'">나가기</button>
+</header>
+
+<div class="container">
+    <!-- 2. 좌측 참가자 목록 -->
+    <aside class="participant-area">
+        <div class="p-title">🏆 참가자 랭킹 (<span id="p-count">0</span>명)</div>
+        <div id="p-list">
+            <!-- JS로 아이템 추가 -->
+        </div>
+    </aside>
+
+    <!-- [중앙] 퀴즈 화면 -->
+    <main class="quiz-area">
+        <div class="question-box">
+            <h3>QUIZ TIME</h3>
+            <p class="question-text" id="quizQuestion">
+                참가자를 기다리는 중...
+            </p>
+        </div>
+        
+        <!-- 3. 게임 시작 버튼 -->
+        <button id="startBtn" class="start-btn" onclick="sendStartGame()">GAME START</button>
+        
+        <!-- 정답 입력 (게임 시작 후 보임) -->
+        <input type="text" id="ansInput" class="answer-input" style="display:none;" placeholder="정답 입력" onkeydown="if(event.key==='Enter') sendAnswer(this)">
+    </main>
+
+    <!-- [우측] 채팅 화면 -->
+    <aside class="chat-area">
+        <div id="chatBox"></div>
+        <div class="chat-input-row">
+            <input type="text" id="messageInput" placeholder="메시지 입력..." onkeydown="if(event.key==='Enter') sendMessage()" />
+            <button class="send-btn" onclick="sendMessage()">전송</button>
+        </div>
+    </aside>
+</div>
+
+<script>
+    let socket;
+    // 실제로는 sessionStorage나 쿠키에서 가져와야 함. 임시로 Guest 처리.
+    let myName = sessionStorage.getItem('nickname') || 'Guest'; 
+    let serverIP = sessionStorage.getItem('serverIP'); // 로비에서 저장했다고 가정
+    
+    // URL 파라미터에서 roomId 가져오기
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomId = urlParams.get('roomId');
+
+    document.getElementById('dispRoomId').innerText = roomId;
+
+    window.onload = () => {
+        if (!serverIP || !roomId) {
+            alert("잘못된 접근입니다.");
+            // location.href = 'lobby.html'; // 실제 적용 시 주석 해제
+            // 테스트를 위해 로컬호스트 기본값 설정 가능
+            if(!serverIP) serverIP = window.location.host; 
+        }
+        
+        // 웹소켓 연결
+        // 주의: GameWebSocketHandler 매핑 주소가 /ws/game/* 인지 확인 필요
+        socket = new WebSocket(`ws://${serverIP}/ws/game/${roomId}`);
+        setupWebSocketListeners();
+    };
+
+    function setupWebSocketListeners() {
+        socket.onopen = () => {
+            console.log("🎮 게임 서버 연결됨");
+            // 입장 메시지 전송 -> GameWebSocketHandler의 handleJoin 트리거
+            socket.send(JSON.stringify({ type: 'JOIN', sender: myName, roomId: roomId }));
+        };
+
+        socket.onmessage = function (event){
+            const data = JSON.parse(event.data);
+
+            if (data.type === 'CHAT') {
+                displayMessage(data);
+            } else if (data.type === 'ROOM_UPDATE') { 
+        		// ★ 서버에서 'ROOM_UPDATE' 타입으로 참가자 목록을 보낸다고 가정
+       		 	updateParticipants(data.participants);
+   			 }
+            else if (data.type === 'PARTICIPANT_LIST') {
+                // 2. 참가자 목록 업데이트 (서버에서 점수순 정렬해서 줌)
+                updateParticipants(data.participants);
+            } else if (data.type === 'START') {
+                // 3. 게임 시작 처리
+                alert("게임이 시작되었습니다!");
+                document.getElementById('startBtn').style.display = 'none';
+                document.getElementById('ansInput').style.display = 'block';
+                document.getElementById('quizQuestion').innerText = "문제가 곧 출제됩니다!";
+            }
+        };
+    }
+
+function updateParticipants(participants) {
+    // 1. 데이터 확인 (null이면 빈 배열로 처리)
+    if (!participants) participants = [];
+
+    // 2. 리스트가 들어갈 영역 찾기
+    let listContainer = document.getElementById('p-list');
+    const wrapper = document.querySelector('.participant-area');
+
+    // ★ [핵심] 만약 p-list 태그가 없으면 다시 만들어줍니다 (복구 로직)
+    if (!listContainer) {
+        if (wrapper) {
+            // 제목(p-title)은 건드리지 않고 뒤에 추가
+            listContainer = document.createElement('div');
+            listContainer.id = 'p-list';
+            wrapper.appendChild(listContainer);
+        } else {
+            console.error("오류: .participant-area 태그도 찾을 수 없습니다.");
+            return;
+        }
+    }
+
+    // 3. 중복 제거 (닉네임 기준)
+    const uniqueParticipants = [];
+    const names = new Set();
+    participants.forEach(p => {
+        // 닉네임이 있고, 아직 등록되지 않은 이름만 추가
+        if (p.nickname && !names.has(p.nickname)) {
+            names.add(p.nickname);
+            uniqueParticipants.push(p);
+        }
+    });
+
+    // 4. 참가자 수 업데이트
+    const countSpan = document.getElementById('p-count');
+    if (countSpan) countSpan.innerText = uniqueParticipants.length;
+
+    // 5. 화면 초기화 후 다시 그리기
+    listContainer.innerHTML = '';
+    
+    // 점수순 정렬
+    uniqueParticipants.sort((a, b) => b.score - a.score);
+
+    uniqueParticipants.forEach(p => {
+        const isMe = (p.nickname === myName);
+        const div = document.createElement('div');
+        
+        // 스타일 적용
+        div.style.padding = "10px";
+        div.style.borderBottom = "1px solid #46627f";
+        div.style.marginBottom = "5px";
+        
+        if (isMe) {
+            div.style.backgroundColor = "rgba(241, 196, 15, 0.1)"; 
+            div.style.borderLeft = "3px solid #f1c40f";
+        }
+
+        div.innerHTML = `
+            <div style="font-weight: ${isMe ? 'bold' : 'normal'}; color: ${isMe ? '#f1c40f' : '#ecf0f1'};">
+                ${p.nickname} ${isMe ? '(나)' : ''}
+            </div>
+            <div style="font-size: 0.85rem; color: #bdc3c7;">
+                Score: ${p.score}
+            </div>
+        `;
+        listContainer.appendChild(div);
+    });
+}
+
+    function displayMessage(msg) {
+        const chatBox = document.getElementById("chatBox");
+        
+        // 시스템 메시지 (입장 알림 등)
+        if (msg.sender === '[알림]') {
+            chatBox.innerHTML += `<div class="system-msg"><span class="system-badge">${msg.text}</span></div>`;
+        } else {
+            const isMe = msg.sender === myName;
+            const cls = isMe ? "me" : "you";
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const nameHtml = isMe ? '' : `<span class="sender-name">${msg.sender}</span>`;
+
+            chatBox.innerHTML += `
+                <div style="clear:both;">
+                    <div class="message ${cls}">
+                        ${nameHtml}
+                        <div>${msg.text}</div>
+                        <small style="font-size:0.7rem; color:#ccc;">${time}</small>
+                    </div>
+                </div>`;
+        }
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function sendMessage() {
+        const input = document.getElementById("messageInput");
+        const msg = input.value;
+        if (msg.trim() === "") return;
+
+        socket.send(JSON.stringify({ type: 'CHAT', sender: myName, text: msg, roomId: roomId }));
+        input.value = '';
+    }
+
+    // 3. 게임 시작 요청 보내기
+    function sendStartGame() {
+        // GameWebSocketHandler에서 START 타입 처리 로직 필요
+        socket.send(JSON.stringify({ type: 'START', sender: myName, roomId: roomId }));
+    }
+
+    function sendAnswer(inputElement) {
+        const answer = inputElement.value;
+        if(!answer) return;
+        
+        // 정답 제출 로직 (추후 구현)
+        // socket.send(JSON.stringify({ type: 'ANSWER', ... }));
+        
+        inputElement.value = ''; 
+    }
+</script>
+</body>
+</html>

@@ -8,10 +8,7 @@ import jakarta.persistence.Id;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/**
- * DB에 저장되는 문제 뱅크 (JPA Entity)
- * - 담당: 원용
- */
+
 @Entity
 @Getter
 @NoArgsConstructor

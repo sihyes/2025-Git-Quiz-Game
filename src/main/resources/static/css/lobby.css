@@ -1,0 +1,35 @@
+/* ... 기존 스타일 유지 ... */
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f4f6f8; margin: 0; padding: 0; }
+        .header-top, .header-bottom { background: white; }
+        .nav-menu ul { list-style: none; }
+        a { text-decoration: none; color: inherit; }
+        .main-layout { display: flex; max-width: 1200px; margin: 30px auto; padding: 0 20px; gap: 30px; align-items: flex-start; }
+        .sidebar { width: 300px; background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); text-align: center; flex-shrink: 0; }
+        .profile-img { width: 80px; height: 80px; background-color: #00664F; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 30px; color: #fff; }
+        .user-name { font-size: 1.4rem; font-weight: bold; margin-bottom: 5px; color: #333; }
+        .user-rank { display: inline-block; background-color: #FFF3CD; color: #856404; padding: 4px 12px; border-radius: 12px; font-size: 0.85rem; font-weight: bold; margin-bottom: 20px; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 25px; border-top: 1px solid #eee; padding-top: 15px;}
+        .stat-item { background-color: #f9f9f9; padding: 10px; border-radius: 8px; }
+        .stat-label { font-size: 0.8rem; color: #666; display: block; margin-bottom: 4px; }
+        .stat-value { font-size: 1.1rem; font-weight: bold; color: #00664F; }
+        .create-room-btn { width: 100%; padding: 12px; background-color: #00664F; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .create-room-btn:hover { background-color: #004d3b; transform: translateY(-2px); }
+        .content-area { flex-grow: 1; width: 100%; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .section-title { font-size: 1.5rem; font-weight: bold; color: #333; border-left: 5px solid #00664F; padding-left: 15px; }
+        .room-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+        .room-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.05); transition: 0.2s; border: 1px solid #eee; position: relative; display: flex; flex-direction: column; }
+        .room-card:hover { transform: translateY(-5px); box-shadow: 0 8px 16px rgba(0,0,0,0.1); border-color: #00664F; }
+        .room-top { height: 6px; background-color: #00664F; }
+        .room-body { padding: 15px; flex-grow: 1; }
+        .room-status { font-size: 0.7rem; font-weight: bold; padding: 3px 8px; border-radius: 4px; margin-bottom: 10px; display: inline-block; }
+        .status-WAITING { background-color: #e6f4ea; color: #1e8e3e; }
+        .status-PLAYING { background-color: #fce8e6; color: #c5221f; }
+        .room-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 8px; color: #333; }
+        .room-host { font-size: 0.85rem; color: #777; margin-bottom: 15px; display: flex; align-items: center; gap: 5px;}
+        .room-footer { padding: 15px; border-top: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+        .user-count { font-size: 0.9rem; color: #555; font-weight: bold; }
+        .join-btn { padding: 6px 16px; border: 1px solid #00664F; background: white; color: #00664F; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .join-btn:hover { background-color: #00664F; color: white; }
+        .empty-room { grid-column: 1 / -1; text-align: center; padding: 40px; color: #999; }
+        .hidden { display: none !important; }

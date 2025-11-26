@@ -1,0 +1,49 @@
+        * { box-sizing: border-box; }
+        body { font-family: 'Noto Sans KR', sans-serif; margin: 0; background-color: #2c3e50; height: 100vh; display: flex; flex-direction: column; color: white; }
+
+        /* 헤더 */
+        header { background: #34495e; padding: 15px 20px; border-bottom: 1px solid #46627f; display: flex; justify-content: space-between; align-items: center; height: 60px; }
+        .room-title { font-weight: bold; font-size: 1.2rem; color: #ecf0f1; }
+        .quit-btn { background: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+
+        /* 메인 컨테이너 */
+        .container { display: flex; flex: 1; height: calc(100vh - 60px); }
+
+        /* [좌측] 참가자 목록 (20%) */
+        .participant-area { flex: 2; background: #2c3e50; border-right: 1px solid #46627f; padding: 20px; overflow-y: auto; }
+        .p-title { font-weight: bold; margin-bottom: 15px; border-bottom: 2px solid #f1c40f; padding-bottom: 10px; font-size: 1.1rem; }
+        
+        .p-item { background: #34495e; margin-bottom: 8px; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; transition: 0.3s; }
+        .p-rank { font-weight: bold; color: #f1c40f; width: 25px; }
+        .p-name { flex-grow: 1; font-weight: 500; }
+        .p-score { font-weight: bold; color: #2ecc71; }
+
+        /* [중앙] 퀴즈 영역 (50%) */
+        .quiz-area { flex: 5; background: #ecf0f1; color: #333; padding: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .question-box { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); width: 90%; text-align: center; margin-bottom: 30px; }
+        .question-text { font-size: 1.8rem; font-weight: bold; margin-bottom: 20px; color: #2c3e50; }
+        
+        .answer-input { width: 60%; padding: 15px; font-size: 1.2rem; border: 2px solid #3498db; border-radius: 8px; text-align: center; }
+        
+        /* 게임 시작 버튼 */
+        .start-btn { padding: 15px 50px; font-size: 1.5rem; background-color: #27ae60; color: white; border: none; border-radius: 50px; cursor: pointer; font-weight: bold; box-shadow: 0 5px 0 #219150; transition: 0.2s; margin-top: 20px; }
+        .start-btn:hover { transform: translateY(-2px); }
+        .start-btn:active { transform: translateY(4px); box-shadow: none; }
+
+        /* [우측] 채팅 영역 (30%) */
+        .chat-area { flex: 3; background: #ecf0f1; display: flex; flex-direction: column; border-left: 1px solid #bdc3c7; }
+        #chatBox { flex: 1; padding: 15px; overflow-y: auto; color: #333; }
+        .chat-input-row { padding: 10px; background: white; display: flex; border-top: 1px solid #ddd; }
+        #messageInput { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; margin-right: 5px; }
+        .send-btn { background-color: #3498db; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; }
+
+        /* 채팅 메시지 */
+        .message { padding: 8px 12px; margin: 5px 0; border-radius: 10px; font-size: 0.9rem; clear: both; max-width: 80%; }
+        .me { background-color: #3498db; color: white; float: right; border-radius: 10px 0 10px 10px; }
+        .you { background-color: white; border: 1px solid #ddd; float: left; border-radius: 0 10px 10px 10px; }
+        .sender-name { font-size: 0.7rem; color: #7f8c8d; margin-bottom: 2px; display: block; }
+        
+        /* 시스템 알림 */
+        .system-msg { text-align: center; color: #7f8c8d; font-size: 0.8rem; margin: 10px 0; clear: both; }
+        .system-badge { background: #ddd; padding: 3px 10px; border-radius: 20px; }
+        .clearfix::after { content: ""; clear: both; display: table; }

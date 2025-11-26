@@ -1,13 +1,9 @@
 package kr.ac.ewha.java2.domain.pojo;
 
-
 import kr.ac.ewha.java2.domain.entity.AppUser;
 import lombok.Getter;
 import lombok.Setter;
-/**
- * 게임 방에 참여한 유저 정보 (In-Memory POJO)
- * - 담당: 원용
- */
+
 @Getter
 @Setter
 public class Participant {
@@ -19,6 +15,12 @@ public class Participant {
     public Participant(AppUser user) {
         this.userId = user.getId(); //123456765434567545
         this.nickname = user.getNickname();
-        this.score = 0; // 게임 시작 시 0점
+        this.score = 0; 
+    }
+    	
+    public Participant(Long userId, String nickname) {
+        this.userId = userId;
+        this.nickname = nickname;
+        this.score = 0;
     }
 }
