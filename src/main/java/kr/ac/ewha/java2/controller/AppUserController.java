@@ -4,7 +4,6 @@ import jakarta.servlet.http.HttpSession;
 import kr.ac.ewha.java2.domain.entity.AppUser;
 import kr.ac.ewha.java2.domain.repository.AppUserRepository;
 import kr.ac.ewha.java2.service.AppUserService;
-import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.web.bind.annotation.*;
 
