@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원가입 - Git Quiz</title>
+    <style>
+        /* login.html과 동일한 스타일 */
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f9f9f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .auth-container { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+        
+        .auth-form input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .auth-btn { width: 100%; padding: 12px; background-color: #00664F; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; }
+        .auth-btn:hover { background-color: #0056b3; }
+
+        .switch-link { margin-top: 20px; font-size: 14px; color: #555; }
+        .switch-link a { color: #00664F; font-weight: bold; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+<div class="auth-container">
+    <h2 style="color:#00664F; margin-bottom: 20px;">회원가입</h2>
+
+    <div class="auth-form">
+        <input type="text" id="newId" placeholder="아이디 (로그인용)" required>
+        <input type="password" id="newPw" placeholder="비밀번호" required>
+        <input type="text" id="newNickname" placeholder="닉네임 (게임 표시용)" required>
+        
+        <button class="auth-btn" onclick="handleSignup()">가입 완료</button>
+    </div>
+
+    <p class="switch-link">
+        이미 계정이 있으신가요?
+        <a href="login.html">로그인 하러가기</a>
+    </p>
+</div>
+
+<script>
+    async function handleSignup() {
+        // 1. 로그인 페이지에서 저장된 IP 가져오기
+        let ip = sessionStorage.getItem('serverIP');
+        
+        // 만약 IP가 없다면? (바로 회원가입 페이지로 들어온 경우)
+        if (!ip) {
+            ip = prompt("서버 IP 주소를 입력해주세요 (예: localhost:8080)", "localhost:8080");
+            if(ip) sessionStorage.setItem('serverIP', ip);
+            else return;
+        }
+
+        const id = document.getElementById('newId').value;
+        const pw = document.getElementById('newPw').value;
+        const nickname = document.getElementById('newNickname').value;
+
+        if (!id || !pw || !nickname) {
+            alert("모든 정보를 입력해주세요.");
+            return;
+        }
+
+        try {
+            // 2. 서버로 회원가입 요청
+            const response = await fetch(`http://${ip}/api/signup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                // 백엔드 Map<String, String> 키값과 일치해야 함
+                body: JSON.stringify({ id: id, pw: pw, nickname: nickname }) 
+            });
+
+            if (response.ok) {
+                const result = await response.text();
+                if (result === "SUCCESS") {
+                    alert("🎉 회원가입 성공! 로그인 페이지로 이동합니다.");
+                    location.href = 'index.html';
+                } else {
+                    alert("❌ 실패: " + result); // 예: 이미 존재하는 ID
+                }
+            } else {
+                alert(`⚠️ 서버 오류 (코드: ${response.status})`);
+            }
+        } catch (error) {
+            console.error(error);
+            alert("⛔ 서버 연결 실패! IP를 확인해주세요.");
+        }
+    }
+</script>
+
+</body>
+</html>

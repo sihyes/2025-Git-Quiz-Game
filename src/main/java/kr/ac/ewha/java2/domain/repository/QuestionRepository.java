@@ -1,4 +1,4 @@
-package kr.ac.ewha.java2.repository;
+package kr.ac.ewha.java2.domain.repository;
 
 
 import org.springframework.data.jpa.repository.JpaRepository;

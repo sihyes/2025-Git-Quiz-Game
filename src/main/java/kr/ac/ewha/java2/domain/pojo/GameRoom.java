@@ -11,10 +11,7 @@ import java.util.Map;
 
 import kr.ac.ewha.java2.domain.entity.Question;
 
-/**
- * 실시간 게임 방 정보 (In-Memory POJO)
- * - 담당: 원용
- */
+
 @Getter
 @Setter
 public class GameRoom {
@@ -22,6 +19,7 @@ public class GameRoom {
     private Long roomId; // 방 고유 ID
     private String roomName; // 방 제목
     private Long hostId; // 방장 User ID
+    private String hostNickname; // 방장 닉네임
 
     // ---- 통합된 방 설정 ----
     private int questionCount; // 총 문제 수
@@ -37,17 +35,17 @@ public class GameRoom {
     private List<Question> questions; // 이번 게임에서 사용할 문제 목록
     private int currentQuestionIndex; // 현재 문제 인덱스
 
-    public GameRoom(Long roomId, String roomName, Long hostId, int questionCount, int timeLimit) {
+    public GameRoom(Long roomId, String roomName, Long hostId, String hostNickname, int questionCount, int timeLimit, int maxParticipants) {
         this.roomId = roomId;
         this.roomName = roomName;
         this.hostId = hostId;
+        this.hostNickname = hostNickname;
         this.questionCount = questionCount;
         this.timeLimitPerQuestion = timeLimit;
-        this.maxParticipants = 8; // 기본값
+        this.maxParticipants = maxParticipants;
         this.state = GameState.WAITING;
         this.currentQuestionIndex = 0;
     }
-
     // --- 게임 진행에 필요한 편의 메서드들 ---
 
     public void addParticipant(Participant participant) {
@@ -60,6 +58,10 @@ public class GameRoom {
 
     public Participant getParticipant(Long userId) {
         return participants.get(userId);
+    }
+    
+    public int getCurrentParticipantCount() {
+        return participants.size();
     }
     
     public Question getCurrentQuestion() {
