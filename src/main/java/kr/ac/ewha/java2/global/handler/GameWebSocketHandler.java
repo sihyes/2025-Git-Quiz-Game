@@ -1,13 +1,11 @@
 package kr.ac.ewha.java2.global.handler;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import kr.ac.ewha.java2.domain.entity.AppUser;
+import kr.ac.ewha.java2.domain.entity.Question;
 import kr.ac.ewha.java2.domain.pojo.GameRoom;
-import kr.ac.ewha.java2.domain.pojo.Participant;
+import kr.ac.ewha.java2.dto.NewQuestionResponseDto;
 import kr.ac.ewha.java2.service.GameRoomService;
-
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -16,7 +14,9 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -94,6 +94,27 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
+		}
+	}
+
+	public void broadcastQuestion(Long roomId, Question question){
+		List<WebSocketSession> sessions = roomSessions.get(roomId);
+		if (sessions != null) {
+			try{
+				NewQuestionResponseDto newQuestion = new NewQuestionResponseDto(roomId, question.getQuestionText());
+				String jsonMsg = objectMapper.writeValueAsString(newQuestion);
+
+				for (WebSocketSession s : sessions) {
+					if (s.isOpen()) {
+						try {
+							s.sendMessage(new TextMessage(jsonMsg));
+						} catch (Exception e) {
+						}
+					}
+				}
+			} catch (Exception e) {
+                throw new RuntimeException(e);
+            }
 		}
 	}
 

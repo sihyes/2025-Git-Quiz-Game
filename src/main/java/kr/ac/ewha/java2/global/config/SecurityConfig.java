@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
@@ -34,10 +35,12 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // 로그인 없이 허용할 경로들
                 .requestMatchers(
-                        "/", "/index.html", "/lobby.html", "/signup.html", "/gameroom.html",
-                        "/css/**", "/js/**", "/img/**",
                         "/api/**", // API 경로
-                        "/ws/**", "/ws/chat", "/ws/lobby" // 소켓 경로
+                        "/ws/**", "/ws/chat", "/ws/lobby", // 소켓 경로
+                        "/", "/index.html", "/lobby.html", "/signup.html", "/gameroom.html",
+                        "/result.html",
+                        "/css/**", "/js/**", "/img/**"
+
                 ).permitAll()
                 
                 // 나머지는 인증 필요
@@ -45,6 +48,10 @@ public class SecurityConfig {
             );
 
         return http.build();
+    }
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return (web) -> web.ignoring().requestMatchers("/api/rooms/**");
     }
 
     // CORS 설정 (모든 출처 허용)
