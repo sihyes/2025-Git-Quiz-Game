@@ -15,15 +15,12 @@
 </header>
 
 <div class="container">
-    <!-- 2. 좌측 참가자 목록 -->
     <aside class="participant-area">
         <div class="p-title">🏆 참가자 랭킹 (<span id="p-count">0</span>명)</div>
         <div id="p-list">
-            <!-- JS로 아이템 추가 -->
         </div>
     </aside>
 
-    <!-- [중앙] 퀴즈 화면 -->
     <main class="quiz-area">
         <div class="question-box">
             <h3>QUIZ TIME</h3>
@@ -32,14 +29,11 @@
             </p>
         </div>
 
-        <!-- 3. 게임 시작 버튼 -->
         <button id="startBtn" class="start-btn" onclick="sendStartGame()">GAME START</button>
 
-        <!-- 정답 입력 (게임 시작 후 보임) -->
         <input type="text" id="ansInput" class="answer-input" style="display:none;" placeholder="정답 입력" onkeydown="if(event.key==='Enter') sendAnswer(this)">
     </main>
 
-    <!-- [우측] 채팅 화면 -->
     <aside class="chat-area">
         <div id="chatBox"></div>
         <div class="chat-input-row">
@@ -51,84 +45,57 @@
 
 <script>
     let socket;
-    // 실제로는 sessionStorage나 쿠키에서 가져와야 함. 임시로 Guest 처리.
     let myName = sessionStorage.getItem('nickname') || 'Guest';
-    let serverIP = sessionStorage.getItem('serverIP'); // 로비에서 저장했다고 가정
+    let serverIP = sessionStorage.getItem('serverIP');
 
-    // URL 파라미터에서 roomId 가져오기
     const urlParams = new URLSearchParams(window.location.search);
     const roomId = urlParams.get('roomId');
 
     document.getElementById('dispRoomId').innerText = roomId;
 
-    // ✨ 게임 상태 및 타이머 관련 변수 추가
-    let currentTimer; // setInterval ID를 저장할 변수
-    let timeLeft = 0; // 남은 시간 (초)
-    let questionLimit = 5; // ★ 기본값: 서버에서 가져온 값으로 덮어쓰기
-    let currentQuestionIndex = 0;
-    let questionDuration = 10; // ★ 기본값: 서버에서 가져온 값으로 덮어쓰기
+    // ✨ 서버에서 받아올 변수 (클라이언트가 알고 있어야 할 설정 값)
+    let currentTimer;
+    let timeLeft = 0;
+    let questionDuration = 10; // 서버에서 로드할 기본값
+    let questionLimit = 0; // 서버에서 로드할 총 문제 수
 
-    // ★ 시뮬레이션: 문제 데이터 (실제로는 서버에서 받아와야 함)
-    const questionData = [
-        { text: "1. 이 게임의 제목은 무엇인가요? (Ctrl+Z)", answer: "Ctrl+Z" },
-        { text: "2. 현재 웹 페이지의 언어 코드는 무엇인가요? (ko)", answer: "ko" },
-        { text: "3. 10 + 20 은?", answer: "30" },
-        { text: "4. 다음으로 가장 좋아하는 색깔은? (파란색)", answer: "파란색" },
-        { text: "5. 마지막 문제입니다. 화이팅!", answer: "화이팅" }
-    ];
-
-    // 시뮬레이션을 위한 참가자 목록 초기화 (세션 스토리지 사용)
+    // 시뮬레이션을 위한 참가자 목록 초기화 (서버에서 ROOM_UPDATE를 보내주므로 보조 역할)
     function getInitialParticipants() {
         let stored = sessionStorage.getItem('participants');
         if (stored) return JSON.parse(stored);
-
         return [{ nickname: myName, score: 0 }];
     }
 
-    // ✨ window.onload 함수를 async로 변경하여 방 정보 로딩을 기다립니다.
     window.onload = async () => {
         if (!serverIP || !roomId) {
             alert("잘못된 접근입니다.");
             if(!serverIP) serverIP = window.location.host;
         }
 
-        // 초기 참가자 목록 로드 및 화면 표시 (시뮬레이션)
         updateParticipants(getInitialParticipants());
 
-        // ★ 방 정보 로드가 완료될 때까지 기다림
+        // ★ 서버에서 방 설정을 로드하여 questionDuration과 questionLimit을 업데이트합니다.
         await fetchRoomInfo(serverIP, roomId);
 
-        // 웹소켓 연결 (방 정보 로드 후 시작)
         socket = new WebSocket(`ws://${serverIP}/ws/game/${roomId}`);
         setupWebSocketListeners();
     };
 
-    // ✨ 서버에서 방 정보를 가져오는 함수
     async function fetchRoomInfo(ip, roomId) {
-    try {
-        const res = await fetch(`http://${ip}/api/rooms/${roomId}`);
-
-        if (res.ok) {
-            const roomInfo = await res.json();
-
-            // ✨ 서버에서 받은 시간 제한을 전역 변수에 저장
-            questionDuration = roomInfo.timeLimitPerQuestion;
-            questionLimit = roomInfo.questionCount; // 문제 수도 반영
-
-            console.log(`✅ 방 설정 로드 완료: 시간 제한 ${questionDuration}초, 문제 수 ${questionLimit}개`);
-            // ★ 성공 시 alert 추가:
-            alert(`방 설정 로드 성공! 문제당 제한 시간: ${questionDuration}초`);
-        } else {
-            // ★ 실패 시 alert 추가:
-            alert(`방 설정 로드 실패: 서버 응답 코드 ${res.status}. 기본값(10초) 사용.`);
-            console.error(`방 설정 로드 실패. 상태: ${res.status}`);
+        try {
+            const res = await fetch(`http://${ip}/api/rooms/${roomId}`);
+            if (res.ok) {
+                const roomInfo = await res.json();
+                questionDuration = roomInfo.timeLimitPerQuestion;
+                questionLimit = roomInfo.questionCount;
+                console.log(`✅ 방 설정 로드 완료: 시간 제한 ${questionDuration}초, 문제 수 ${questionLimit}개`);
+            } else {
+                console.error(`방 설정 로드 실패. 상태: ${res.status}. 기본값 사용.`);
+            }
+        } catch (e) {
+            console.error("방 정보 API 호출 중 오류 발생:", e);
         }
-    } catch (e) {
-        // ★ 오류 발생 시 alert 추가:
-        alert("방 정보 API 호출 중 오류 발생. 기본값(10초) 사용.");
-        console.error("방 정보 조회 실패:", e);
     }
-}
 
     function setupWebSocketListeners() {
         socket.onopen = () => {
@@ -142,166 +109,171 @@
             if (data.type === 'CHAT') {
                 displayMessage(data);
             } else if (data.type === 'ROOM_UPDATE' || data.type === 'PARTICIPANT_LIST') {
-                // 서버에서 받은 참가자 목록으로 업데이트
+                // ✨ 서버에서 최신 점수와 랭킹 정보를 받아 화면을 갱신합니다.
                 updateParticipants(data.participants);
             } else if (data.type === 'START') {
-                // 3. 게임 시작 처리
-                alert("게임이 시작되었습니다! 10초 후 첫 문제가 출제됩니다.");
+                // 게임 시작
                 document.getElementById('startBtn').style.display = 'none';
                 document.getElementById('ansInput').style.display = 'block';
                 document.getElementById('quizQuestion').innerText = "문제가 곧 출제됩니다! (10초 대기)";
 
-                // ✨ 10초 대기 타이머 시작 (종료 시 startFirstQuestion 호출)
                 document.getElementById('quizTimer').innerText = "10";
-                document.getElementById('quizTimer').style.color = 'white'; // 대기 타이머 색상
-                startTimerDisplay(10, startFirstQuestion);
+                document.getElementById('quizTimer').style.color = 'white';
+                startTimerDisplay(10, onInitialDelayEnd);
+            } else if (data.type === 'QUESTION') { // ⭐ data.type 필드를 체크
+                document.getElementById('quizTimer').innerText = "GO!";
+
+                // 서버 문제 텍스트 표시
+                document.getElementById('quizQuestion').innerHTML = data.questionText;
+
+                // ⭐ [수정] DTO에서 받은 timeLimit 값을 사용
+                const clientDuration = data.timeLimit || questionDuration;
+
+                // 문제 제한 시간 타이머 재시작
+                startTimerDisplay(clientDuration, onQuestionTimerEnd);
+            }
+            // ✨ 서버에서 문제 수신 (DB 문제)
+            else if (data.questionText) {
+                document.getElementById('quizTimer').innerText = "GO!";
+                // 서버 문제 텍스트 표시
+                document.getElementById('quizQuestion').innerHTML = data.questionText;
+
+                console.log(`[DEBUG_TIMER] questionDuration: ${questionDuration}`); // 현재 전역 변수 값
+    console.log(`[DEBUG_TIMER] Server Time Limit in Payload: ${data.timeLimit}`); // 서버가 보낸 값
+
+                const clientDuration = data.timeLimit || questionDuration;
+                // 타이머 재시작 (정답 입력 활성화)
+                startTimerDisplay(clientDuration, onQuestionTimerEnd);
+            }
+            // ✨ 정답 여부 피드백 (서버가 보내준다고 가정 - 구현 필요 시 서버 수정)
+            else if (data.type === 'ANSWER_RESULT') {
+                 if (data.isCorrect) {
+                     displayMessage({ sender: '[알림]', text: `🎉 정답입니다! (+${data.score}점)` });
+                 } else {
+                     displayMessage({ sender: '[알림]', text: `❌ 틀렸습니다.` });
+                 }
+            }
+            // ✨ 게임 종료
+            else if (data.type === 'GAME_END') {
+                 endGame();
             }
         };
     }
 
-// ✨ 타이머를 시작하고 화면에 표시하는 함수 (콜백 추가)
-function startTimerDisplay(durationSeconds, onTimerEnd) {
-    if (currentTimer) {
-        clearInterval(currentTimer);
+    // 10초 대기 타이머 종료 시 실행
+    function onInitialDelayEnd() {
+        document.getElementById('quizTimer').innerText = "WAITING...";
+        document.getElementById('quizQuestion').innerText = "문제를 불러오는 중...";
     }
 
-    timeLeft = durationSeconds;
-    const timerElement = document.getElementById('quizTimer');
-
-    // 문제 시간일 경우 타이머 색상 변경
-    if(onTimerEnd === proceedToNextStep) {
-        timerElement.style.color = '#f1c40f'; // 문제 제한 시간 타이머 색상
+    // 문제 타이머 종료 시 실행
+    function onQuestionTimerEnd() {
+        document.getElementById('quizTimer').innerText = "TIME UP!";
+        document.getElementById('quizQuestion').innerText = "시간 종료! 다음 문제 준비 중...";
+        document.getElementById('ansInput').disabled = true; // 시간 종료 시 입력 불가
     }
 
-    currentTimer = setInterval(() => {
-        timerElement.innerText = timeLeft > 0 ? timeLeft : 0;
-
-        if (timeLeft <= 0) {
+    // 타이머 함수
+    function startTimerDisplay(durationSeconds, onTimerEnd) {
+        if (currentTimer) {
             clearInterval(currentTimer);
-            currentTimer = null;
-            onTimerEnd(); // ★ 타이머 종료 시 콜백 함수 실행
-            return;
         }
 
-        timeLeft--;
-    }, 1000);
-}
+        timeLeft = durationSeconds;
+        const timerElement = document.getElementById('quizTimer');
 
-// 10초 대기 타이머 종료 시 호출되어 첫 번째 문제를 시작
-function startFirstQuestion() {
-    document.getElementById('quizTimer').innerText = "START";
-    currentQuestionIndex = 1;
-    startQuestion(currentQuestionIndex);
-}
+        if(onTimerEnd === onQuestionTimerEnd) {
+            timerElement.style.color = '#f1c40f';
+            document.getElementById('ansInput').disabled = false; // 문제 시작 시 입력 활성화
+            document.getElementById('ansInput').focus();
+        }
 
-// 문제 타이머 종료 시 다음 단계로 이동 (다음 문제 또는 게임 종료)
-function proceedToNextStep() {
-    // 현재 문제가 마지막 문제인지 확인
-    if (currentQuestionIndex >= questionLimit) {
-        endGame();
-        return;
+        currentTimer = setInterval(() => {
+            timerElement.innerText = timeLeft > 0 ? timeLeft : 0;
+
+            if (timeLeft <= 0) {
+                clearInterval(currentTimer);
+                currentTimer = null;
+                onTimerEnd();
+                return;
+            }
+
+            timeLeft--;
+        }, 1000);
     }
 
-    // 다음 문제 시작
-    currentQuestionIndex++;
-    startQuestion(currentQuestionIndex);
-}
+    // 게임 종료
+    function endGame() {
+        document.getElementById('quizTimer').innerText = "END";
+        document.getElementById('quizQuestion').innerHTML = "<h2>GAME OVER</h2>게임이 종료되었습니다! 잠시 후 결과 페이지로 이동합니다.";
+        document.getElementById('ansInput').style.display = 'none';
 
-// 특정 문제를 화면에 표시하고 문제 제한 타이머 시작
-function startQuestion(index) {
-    const question = questionData[index - 1];
-    const quizQuestionElement = document.getElementById('quizQuestion');
-
-    // 문제 표시
-    quizQuestionElement.innerHTML = `[${index}/${questionLimit}] ${question.text}`;
-
-    // 문제당 제한 시간 타이머 시작 (종료 시 proceedToNextStep 호출)
-    // ★ questionDuration 변수가 30초로 업데이트되어 반영됩니다.
-    startTimerDisplay(questionDuration, proceedToNextStep);
-}
-
-// 게임 종료 처리 및 result.html로 이동
-function endGame() {
-    document.getElementById('quizTimer').innerText = "END";
-    document.getElementById('quizQuestion').innerHTML = "<h2>GAME OVER</h2>게임이 종료되었습니다! 잠시 후 결과 페이지로 이동합니다.";
-    document.getElementById('ansInput').style.display = 'none';
-
-    // 3초 후 result.html로 이동
-    setTimeout(() => {
-        location.href = 'result.html';
-    }, 3000);
-}
-
-
-function updateParticipants(participants) {
-    // 1. 데이터 확인 (없으면 시뮬레이션 데이터 사용)
-    if (!participants || participants.length === 0) {
-        participants = getInitialParticipants();
+        setTimeout(() => {
+            location.href = 'result.html';
+        }, 3000);
     }
 
-    // 2. 현재 상태를 세션 스토리지에 저장 (시뮬레이션 목적)
-    sessionStorage.setItem('participants', JSON.stringify(participants));
+    // 참가자 목록 및 점수 업데이트 (서버 데이터 기반)
+    function updateParticipants(participants) {
+        if (!participants) participants = [];
 
-    // 3. 리스트 영역 찾기
-    let listContainer = document.getElementById('p-list');
-    const wrapper = document.querySelector('.participant-area');
+        // 세션 저장 (결과 페이지용)
+        sessionStorage.setItem('participants', JSON.stringify(participants));
 
-    if (!listContainer) {
-        if (wrapper) {
-            listContainer = document.createElement('div');
-            listContainer.id = 'p-list';
-            wrapper.appendChild(listContainer);
-        } else {
-            console.error("오류: .participant-area 태그도 찾을 수 없습니다.");
-            return;
+        let listContainer = document.getElementById('p-list');
+        const wrapper = document.querySelector('.participant-area');
+
+        if (!listContainer) {
+            if (wrapper) {
+                listContainer = document.createElement('div');
+                listContainer.id = 'p-list';
+                wrapper.appendChild(listContainer);
+            } else return;
         }
+
+        // 중복 제거
+        const uniqueParticipants = [];
+        const names = new Set();
+        participants.forEach(p => {
+            if (p.nickname && !names.has(p.nickname)) {
+                names.add(p.nickname);
+                uniqueParticipants.push(p);
+            }
+        });
+
+        document.getElementById('p-count').innerText = uniqueParticipants.length;
+        listContainer.innerHTML = '';
+
+        // 점수순 정렬
+        uniqueParticipants.sort((a, b) => b.score - a.score);
+
+        uniqueParticipants.forEach(p => {
+            const isMe = (p.nickname === myName);
+            const div = document.createElement('div');
+            div.style.padding = "10px";
+            div.style.borderBottom = "1px solid #46627f";
+            div.style.marginBottom = "5px";
+
+            if (isMe) {
+                div.style.backgroundColor = "rgba(241, 196, 15, 0.1)";
+                div.style.borderLeft = "3px solid #f1c40f";
+            }
+
+            div.innerHTML = `
+                <div style="font-weight: ${isMe ? 'bold' : 'normal'}; color: ${isMe ? '#f1c40f' : '#ecf0f1'};">
+                    ${p.nickname} ${isMe ? '(나)' : ''}
+                </div>
+                <div style="font-size: 0.85rem; color: #bdc3c7;">
+                    Score: ${p.score}
+                </div>
+            `;
+            listContainer.appendChild(div);
+        });
     }
-
-    // 4. 중복 제거 및 참가자 수 업데이트
-    const uniqueParticipants = [];
-    const names = new Set();
-    participants.forEach(p => {
-        if (p.nickname && !names.has(p.nickname)) {
-            names.add(p.nickname);
-            uniqueParticipants.push(p);
-        }
-    });
-
-    const countSpan = document.getElementById('p-count');
-    if (countSpan) countSpan.innerText = uniqueParticipants.length;
-
-    // 5. 화면 초기화 및 다시 그리기 (점수순 정렬)
-    listContainer.innerHTML = '';
-    uniqueParticipants.sort((a, b) => b.score - a.score);
-
-    uniqueParticipants.forEach(p => {
-        const isMe = (p.nickname === myName);
-        const div = document.createElement('div');
-
-        div.style.padding = "10px";
-        div.style.borderBottom = "1px solid #46627f";
-        div.style.marginBottom = "5px";
-
-        if (isMe) {
-            div.style.backgroundColor = "rgba(241, 196, 15, 0.1)";
-            div.style.borderLeft = "3px solid #f1c40f";
-        }
-
-        div.innerHTML = `
-            <div style="font-weight: ${isMe ? 'bold' : 'normal'}; color: ${isMe ? '#f1c40f' : '#ecf0f1'};">
-                ${p.nickname} ${isMe ? '(나)' : ''}
-            </div>
-            <div id="score-${p.nickname}" style="font-size: 0.85rem; color: #bdc3c7;">
-                Score: ${p.score}
-            </div>
-        `;
-        listContainer.appendChild(div);
-    });
-}
 
     function displayMessage(msg) {
         const chatBox = document.getElementById("chatBox");
-
+        // ... (기존과 동일) ...
         if (msg.sender === '[알림]') {
             chatBox.innerHTML += `<div class="system-msg"><span class="system-badge">${msg.text}</span></div>`;
         } else {
@@ -328,55 +300,29 @@ function updateParticipants(participants) {
         if (msg.trim() === "") return;
 
         socket.send(JSON.stringify({ type: 'CHAT', sender: myName, text: msg, roomId: roomId }));
+        displayMessage({ type: 'CHAT', sender: myName, text: msg });
         input.value = '';
     }
 
-    // 3. 게임 시작 요청 보내기
     function sendStartGame() {
         socket.send(JSON.stringify({ type: 'START', sender: myName, roomId: roomId }));
     }
 
-    // ✨ 정답 입력 및 점수 업데이트 시뮬레이션
+    // ✨ 정답 제출 로직 (서버로만 전송, 로컬 시뮬레이션 제거)
     function sendAnswer(inputElement) {
         const answer = inputElement.value.trim();
-        if(!answer) return;
+        // 비활성화 상태거나 답이 없으면 무시
+        if(!answer || document.getElementById('ansInput').disabled) return;
 
-        // 현재 문제가 없거나 이미 끝난 상태라면 무시
-        if (currentQuestionIndex === 0 || currentQuestionIndex > questionLimit) {
-            inputElement.value = '';
-            return;
-        }
-
-        const currentQuestion = questionData[currentQuestionIndex - 1];
-        let scoreChange = 0;
-        let isCorrect = false;
-
-        // 정답 체크 시뮬레이션 (대소문자 무시)
-        if (currentQuestion && answer.toLowerCase() === currentQuestion.answer.toLowerCase()) {
-            isCorrect = true;
-            scoreChange = 100; // 100점 획득 시뮬레이션
-        }
-
-        if (isCorrect) {
-            // ★ 로컬 점수 업데이트 시뮬레이션
-            let participants = JSON.parse(sessionStorage.getItem('participants'));
-            let myParticipant = participants.find(p => p.nickname === myName);
-
-            if (myParticipant) {
-                myParticipant.score = (myParticipant.score || 0) + scoreChange;
-            }
-
-            updateParticipants(participants); // 화면 업데이트
-
-            displayMessage({ sender: '[알림]', text: `정답! (+${scoreChange}점)` });
-        } else {
-            displayMessage({ sender: '[알림]', text: `오답입니다.` });
-        }
-
-        // 서버에 ANSWER 메시지를 보낸다고 가정
+        // 1. 서버로 정답 전송
         socket.send(JSON.stringify({ type: 'ANSWER', sender: myName, text: answer, roomId: roomId }));
 
+        // 2. 입력창 비우기 (중복 제출 방지는 선택 사항)
         inputElement.value = '';
+
+        // 3. 피드백: "제출됨" 정도만 표시하거나, 서버 응답(ANSWER_RESULT)을 기다림
+        // 현재는 서버가 즉답을 안 주므로 임시 표시
+        displayMessage({ sender: '[알림]', text: `답안 제출: ${answer}` });
     }
 </script>
 </body>

@@ -36,16 +36,19 @@ public class GameRoomService {
      */
     public GameRoom createRoom(CreateRoomRequestDto request, Long hostId, String hostNickname) {
         long roomId = roomIdCounter.getAndIncrement();
-        
+        int questionCount = request.getQuestionCount();
+        int timelimit = request.getTimeLimitPerQuestion();
+        int maxParticipants = request.getMaxParticipants();
+        System.out.println("방 설정: 문제수 - "+questionCount+" 제한시간 - "+timelimit+" 최대 인원 - "+maxParticipants);
         // 기본 설정: 문제 5개, 시간 10초
         GameRoom room = new GameRoom(
                 roomId, 
                 request.getTitle(), 
                 hostId, 
                 hostNickname,
-                request.getQuestionCount(), 
-                request.getTimeLimitPerQuestion(),
-                request.getMaxParticipants()
+                questionCount,
+                timelimit,
+                maxParticipants
         );
                 
         activeRooms.put(roomId, room);

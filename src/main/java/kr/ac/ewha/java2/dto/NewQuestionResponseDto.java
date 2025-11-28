@@ -10,9 +10,14 @@ public class NewQuestionResponseDto {
     private Long questionId;
     //문제 내용
     private String questionText;
-    public NewQuestionResponseDto(){}
-    public NewQuestionResponseDto(Long questionId, String questionText){
+    //제한 시간
+    private int timeLimit;
+
+    //type
+    private final String type = "QUESTION";
+    public NewQuestionResponseDto(Long questionId, String questionText, int timeLimit){
         this.questionId =  questionId;
         this.questionText = questionText;
+        this.timeLimit = timeLimit;
     }
 }
