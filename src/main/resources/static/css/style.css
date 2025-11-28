@@ -1,0 +1,17 @@
+body { font-family: 'Noto Sans KR', sans-serif; background-color: #f9f9f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .auth-container { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+        .auth-form input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .auth-btn { width: 100%; padding: 12px; background-color: #00664F; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; }
+        .auth-btn:hover { background-color: #0056b3; }
+        
+        /* 서버 설정 영역 스타일 */
+        .server-settings { background-color: #f0f0f0; padding: 10px; border-radius: 8px; margin-bottom: 20px; text-align: left; }
+        .server-settings label { font-size: 0.8rem; color: #666; font-weight: bold; display: block; margin-bottom: 5px; }
+        .server-settings input { border: 1px solid #ccc; background: white; margin-bottom: 0; }
+        
+        /* 추가된 스타일: 회원가입 링크 */
+        .switch-link { margin-top: 20px; font-size: 14px; color: #555; }
+        .switch-link a { color: #00664F; font-weight: bold; text-decoration: none; }
+        .switch-link a:hover { text-decoration: underline; }
+        
+        
