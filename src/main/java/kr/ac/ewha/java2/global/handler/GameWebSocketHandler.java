@@ -20,6 +20,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -141,9 +142,10 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 		}
 	}
 
-	public void broadcastGameEnd(Long roomId){
+	public void broadcastGameEnd(Long roomId, Collection<Participant> finalRank){
 		Map<String, Object> msg = new HashMap<>();
 		msg.put("type", "GAME_END");
+		msg.put("finalRank", finalRank);
 		try {
 			String jsonMsg = objectMapper.writeValueAsString(msg);
 			broadcastToRoom(roomId, jsonMsg);

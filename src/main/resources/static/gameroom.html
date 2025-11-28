@@ -155,6 +155,14 @@
             }
             // ✨ 게임 종료
             else if (data.type === 'GAME_END') {
+                    // ⭐⭐ [필수 수정] 서버가 보낸 최종 랭킹 데이터를 무조건 저장
+                 if (data.finalRanking) {
+                     // 서버에서 받은 확정된 랭킹 데이터로 로컬 스토리지를 덮어씁니다.
+                     sessionStorage.setItem('participants', JSON.stringify(data.finalRanking));
+                     console.log("✅ [GAME END] 서버 최종 랭킹 데이터 저장 완료.");
+                 } else {
+                     console.error("🚨 [GAME END] 최종 랭킹 데이터가 누락되었습니다.");
+                 }
                  endGame();
             }
         };

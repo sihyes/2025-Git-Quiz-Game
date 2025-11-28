@@ -10,6 +10,7 @@ import kr.ac.ewha.java2.global.handler.GameWebSocketHandler;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -50,7 +51,8 @@ public class GamePlayService {
         GameRoom room = gameRoomService.findRoomById(roomId);
         if(room != null&& room.getState()==GameState.PLAYING){
             room.setState(GameState.FINISHED);
-            gameWebSocketHandler.broadcastGameEnd(roomId);
+            Collection<Participant> finalRank = room.getParticipants().values();
+            gameWebSocketHandler.broadcastGameEnd(roomId, finalRank);
         }
     }
 
