@@ -10,9 +10,7 @@ import kr.ac.ewha.java2.global.handler.GameWebSocketHandler;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 
 @Service
@@ -39,6 +37,7 @@ public class GamePlayService {
 
         int timeLimit = room.getTimeLimitPerQuestion();
         if(currentQuestion==null){
+            System.out.println("[END] 문제 소진 -> 게임 종료");
             endGame(roomId);
             return;
         }
@@ -51,8 +50,16 @@ public class GamePlayService {
         GameRoom room = gameRoomService.findRoomById(roomId);
         if(room != null&& room.getState()==GameState.PLAYING){
             room.setState(GameState.FINISHED);
-            Collection<Participant> finalRank = room.getParticipants().values();
+            List<Participant> finalRank = new ArrayList<>(room.getParticipants().values());
+            finalRank.sort(Comparator.comparing(Participant::getScore).reversed());
             gameWebSocketHandler.broadcastGameEnd(roomId, finalRank);
+            //클라이언트가 GAME_END 메시지 받을 시간 확보
+            try {
+                Thread.sleep(500);
+
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 
@@ -96,8 +103,15 @@ public class GamePlayService {
         }
         //시간 만료 시 실행할 작업(Runnable) 정의
         Runnable task = () -> {
-            // 시간이 만료되면 실행할 로직
-            proceedToNextQuestion(roomId);
+            try{
+                proceedToNextQuestion(roomId);// 시간이 만료되면 실행할 로직
+            }catch (Exception e){
+                System.out.println("[TIME ERROR]");
+                e.printStackTrace();
+                endGame(roomId);
+            }
+
+
         };
 
         // scheduler를 사용하여 작업 예약 및 Future 객체 획득

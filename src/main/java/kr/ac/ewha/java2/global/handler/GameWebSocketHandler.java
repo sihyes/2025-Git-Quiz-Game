@@ -142,14 +142,27 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 		}
 	}
 
-	public void broadcastGameEnd(Long roomId, Collection<Participant> finalRank){
+	public void broadcastGameEnd(Long roomId, List<Participant> finalRank){
 		Map<String, Object> msg = new HashMap<>();
 		msg.put("type", "GAME_END");
-		msg.put("finalRank", finalRank);
+		msg.put("finalRanking", finalRank);
 		try {
 			String jsonMsg = objectMapper.writeValueAsString(msg);
+			List<WebSocketSession> sessions = roomSessions.get(roomId);
+			if (sessions!=null){
+				for(WebSocketSession s: sessions){
+					if (s.isOpen()){
+						try {
+							s.sendMessage(new TextMessage(jsonMsg));
+						}catch (IOException e){
+							System.err.println("[ERROR] 결과 전송 실패 - 세션 ID: "+s.getId());
+						}
+					}
+				}
+			}
 			broadcastToRoom(roomId, jsonMsg);
 		} catch (IOException e) {
+			System.out.println("[ERROR] IO 오류"+roomId);
             e.printStackTrace();
         }
     }
