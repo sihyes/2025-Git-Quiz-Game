@@ -1,14 +1,18 @@
 package kr.ac.ewha.java2.global.handler;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import kr.ac.ewha.java2.domain.entity.AppUser;
+import kr.ac.ewha.java2.domain.entity.Question;
 import kr.ac.ewha.java2.domain.pojo.GameRoom;
 import kr.ac.ewha.java2.domain.pojo.Participant;
+import kr.ac.ewha.java2.dto.NewQuestionResponseDto;
+import kr.ac.ewha.java2.service.GamePlayService;
 import kr.ac.ewha.java2.service.GameRoomService;
-
+import org.hibernate.QueryException;
+import org.hibernate.type.descriptor.java.ObjectJavaType;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.beanvalidation.SpringValidatorAdapter;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -16,7 +20,10 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -24,6 +31,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class GameWebSocketHandler extends TextWebSocketHandler {
 
 	private final GameRoomService gameRoomService;
+	private final GamePlayService gamePlayService;
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	// 방 번호(Long) 별로 접속한 세션 리스트를 관리
@@ -34,8 +42,9 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 	private static final Map<WebSocketSession, Long> sessionRoomMap = new ConcurrentHashMap<>();
 	private static final Map<WebSocketSession, Long> sessionUserMap = new ConcurrentHashMap<>();
 
-	public GameWebSocketHandler(GameRoomService gameRoomService) {
+	public GameWebSocketHandler(GameRoomService gameRoomService, GamePlayService gamePlayService) {
 		this.gameRoomService = gameRoomService;
+		this.gamePlayService=gamePlayService;
 	}
 
 	@Override
@@ -97,6 +106,28 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 		}
 	}
 
+	public void broadcastQuestion(Long roomId, Question question, int timeLimit){
+		List<WebSocketSession> sessions = roomSessions.get(roomId);
+
+		if (sessions != null) {
+			try{
+				NewQuestionResponseDto newQuestion = new NewQuestionResponseDto(roomId, question.getQuestionText(), timeLimit);
+				String jsonMsg = objectMapper.writeValueAsString(newQuestion);
+
+				for (WebSocketSession s : sessions) {
+					if (s.isOpen()) {
+						try {
+							s.sendMessage(new TextMessage(jsonMsg));
+						} catch (Exception e) {
+						}
+					}
+				}
+			} catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+		}
+	}
+
 	private void broadcastToRoom(Long roomId, String msg) {
 		List<WebSocketSession> sessions = roomSessions.get(roomId);
 		if (sessions != null) {
@@ -111,19 +142,101 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 		}
 	}
 
+	public void broadcastGameEnd(Long roomId, List<Participant> finalRank){
+		Map<String, Object> msg = new HashMap<>();
+		msg.put("type", "GAME_END");
+		msg.put("finalRanking", finalRank);
+		try {
+			String jsonMsg = objectMapper.writeValueAsString(msg);
+			List<WebSocketSession> sessions = roomSessions.get(roomId);
+			if (sessions!=null){
+				for(WebSocketSession s: sessions){
+					if (s.isOpen()){
+						try {
+							s.sendMessage(new TextMessage(jsonMsg));
+						}catch (IOException e){
+							System.err.println("[ERROR] 결과 전송 실패 - 세션 ID: "+s.getId());
+						}
+					}
+				}
+			}
+			broadcastToRoom(roomId, jsonMsg);
+		} catch (IOException e) {
+			System.out.println("[ERROR] IO 오류"+roomId);
+            e.printStackTrace();
+        }
+    }
+
 	@Override
 	protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
 		Long roomId = extractRoomId(session);
 		String payload = message.getPayload();
 
+		Long userId = sessionUserMap.get(session);
+
+		//메시지 JSON 파싱...
+		Map<String, Object> data = objectMapper.readValue(payload, Map.class);
+		String type = (String) data.get("type");
+
 		// 메시지 내용을 살짝 열어봄 (로그용)
 		System.out.println("📩 게임방(" + roomId + ") 메시지: " + payload);
+
+		//START 처리...
+
+		if("START".equalsIgnoreCase(type)){
+			gamePlayService.startInitialDelayTimer(roomId);
+			broadcastToRoom(roomId, payload);
+			return;
+		}
+
+		//ANSWER 메시지 처리...
+		if ("ANSWER".equalsIgnoreCase(type)){
+			if (userId == null) {
+				System.err.println("🚨 ERROR: ANSWER 요청에 userId가 매핑되지 않았습니다.");
+				return;
+			}
+
+			GameRoom room = gameRoomService.findRoomById(roomId);
+			if (room == null) {
+				System.err.println("🚨 ERROR: roomId " + roomId + " 에 해당하는 방을 찾을 수 없습니다.");
+				return;
+			}
+			Question question = room.getCurrentQuestion();
+			if (question == null) {
+				System.err.println("🚨 ERROR: 현재 출제된 문제가 없습니다. (Q is null)");
+				return;
+			}
+
+			Participant participant = room.getParticipants().get(userId);
+			String answer = (String) data.get("text");
+			if(participant == null || answer == null) {
+				System.err.println("🚨 ERROR: 참가자 객체 (ID: " + userId + ")가 방에 존재하지 않습니다.");
+				return;
+			}
+
+			try{
+				int questionScore = question.getScore();
+
+				boolean isCorrect = gamePlayService.submitAnswer(roomId, participant, answer);
+				int earnedScore = isCorrect?questionScore:0;
+
+				sendAnswerResult(session, isCorrect, earnedScore);
+				broadcastRoomInfo(roomId);
+			}catch (Exception e){
+				System.out.println("submittedAnswer exception");
+				e.printStackTrace();
+			}
+
+			return;
+		}
+
+
 
 		// ✅ 핵심: 같은 방에 있는 사람들에게만 메시지 전송 (브로드캐스트)
 		List<WebSocketSession> sessions = roomSessions.get(roomId);
 		if (sessions != null) {
 			for (WebSocketSession s : sessions) {
-				if (s.isOpen()) {
+				if (s.isOpen()&&!s.equals(session)) {
 					try {
 						s.sendMessage(message); // 받은 메시지 그대로 전달 (Echo)
 					} catch (IOException e) {
@@ -133,7 +246,19 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 			}
 		}
 	}
+	public void sendAnswerResult(WebSocketSession session, boolean isCorrect, int currentScore ){
+		if(!session.isOpen())return;
+		try{
+			Map<String, Object> msg = new HashMap<>();
+			msg.put("type", "ANSWER_RESULT");
+			msg.put("isCorrect", isCorrect);
+			msg.put("score", currentScore);
+			session.sendMessage(new TextMessage(objectMapper.writeValueAsString(msg)));
+		} catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 
+    }
 	@Override
 	public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
 		Long roomId = sessionRoomMap.get(session);

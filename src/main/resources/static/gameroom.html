@@ -10,19 +10,17 @@
 
 <header>
     <div class="room-title">🎮 방 ID: <span id="dispRoomId"></span></div>
+    <div class="timer-display" id="quizTimer">READY</div>
     <button class="quit-btn" onclick="location.href='lobby.html'">나가기</button>
 </header>
 
 <div class="container">
-    <!-- 2. 좌측 참가자 목록 -->
     <aside class="participant-area">
         <div class="p-title">🏆 참가자 랭킹 (<span id="p-count">0</span>명)</div>
         <div id="p-list">
-            <!-- JS로 아이템 추가 -->
         </div>
     </aside>
 
-    <!-- [중앙] 퀴즈 화면 -->
     <main class="quiz-area">
         <div class="question-box">
             <h3>QUIZ TIME</h3>
@@ -30,15 +28,12 @@
                 참가자를 기다리는 중...
             </p>
         </div>
-        
-        <!-- 3. 게임 시작 버튼 -->
+
         <button id="startBtn" class="start-btn" onclick="sendStartGame()">GAME START</button>
-        
-        <!-- 정답 입력 (게임 시작 후 보임) -->
+
         <input type="text" id="ansInput" class="answer-input" style="display:none;" placeholder="정답 입력" onkeydown="if(event.key==='Enter') sendAnswer(this)">
     </main>
 
-    <!-- [우측] 채팅 화면 -->
     <aside class="chat-area">
         <div id="chatBox"></div>
         <div class="chat-input-row">
@@ -50,34 +45,61 @@
 
 <script>
     let socket;
-    // 실제로는 sessionStorage나 쿠키에서 가져와야 함. 임시로 Guest 처리.
-    let myName = sessionStorage.getItem('nickname') || 'Guest'; 
-    let serverIP = sessionStorage.getItem('serverIP'); // 로비에서 저장했다고 가정
-    
-    // URL 파라미터에서 roomId 가져오기
+    let myName = sessionStorage.getItem('nickname') || 'Guest';
+    let serverIP = sessionStorage.getItem('serverIP');
+
     const urlParams = new URLSearchParams(window.location.search);
     const roomId = urlParams.get('roomId');
 
     document.getElementById('dispRoomId').innerText = roomId;
 
-    window.onload = () => {
+    // ✨ 서버에서 받아올 변수 (클라이언트가 알고 있어야 할 설정 값)
+    let currentTimer;
+    let timeLeft = 0;
+    let questionDuration = 10; // 서버에서 로드할 기본값
+    let questionLimit = 0; // 서버에서 로드할 총 문제 수
+
+    // 시뮬레이션을 위한 참가자 목록 초기화 (서버에서 ROOM_UPDATE를 보내주므로 보조 역할)
+    function getInitialParticipants() {
+        let stored = sessionStorage.getItem('participants');
+        if (stored) return JSON.parse(stored);
+        return [{ nickname: myName, score: 0 }];
+    }
+
+    window.onload = async () => {
         if (!serverIP || !roomId) {
             alert("잘못된 접근입니다.");
-            // location.href = 'lobby.html'; // 실제 적용 시 주석 해제
-            // 테스트를 위해 로컬호스트 기본값 설정 가능
-            if(!serverIP) serverIP = window.location.host; 
+            if(!serverIP) serverIP = window.location.host;
         }
-        
-        // 웹소켓 연결
-        // 주의: GameWebSocketHandler 매핑 주소가 /ws/game/* 인지 확인 필요
+
+        updateParticipants(getInitialParticipants());
+
+        // ★ 서버에서 방 설정을 로드하여 questionDuration과 questionLimit을 업데이트합니다.
+        await fetchRoomInfo(serverIP, roomId);
+
         socket = new WebSocket(`ws://${serverIP}/ws/game/${roomId}`);
         setupWebSocketListeners();
     };
 
+    async function fetchRoomInfo(ip, roomId) {
+        try {
+            const res = await fetch(`http://${ip}/api/rooms/${roomId}`);
+            if (res.ok) {
+                const roomInfo = await res.json();
+                questionDuration = roomInfo.timeLimitPerQuestion;
+                questionLimit = roomInfo.questionCount;
+                console.log(`✅ 방 설정 로드 완료: 시간 제한 ${questionDuration}초, 문제 수 ${questionLimit}개`);
+            } else {
+                console.error(`방 설정 로드 실패. 상태: ${res.status}. 기본값 사용.`);
+            }
+        } catch (e) {
+            console.error("방 정보 API 호출 중 오류 발생:", e);
+        }
+    }
+
     function setupWebSocketListeners() {
         socket.onopen = () => {
             console.log("🎮 게임 서버 연결됨");
-            // 입장 메시지 전송 -> GameWebSocketHandler의 handleJoin 트리거
             socket.send(JSON.stringify({ type: 'JOIN', sender: myName, roomId: roomId }));
         };
 
@@ -86,95 +108,180 @@
 
             if (data.type === 'CHAT') {
                 displayMessage(data);
-            } else if (data.type === 'ROOM_UPDATE') { 
-        		// ★ 서버에서 'ROOM_UPDATE' 타입으로 참가자 목록을 보낸다고 가정
-       		 	updateParticipants(data.participants);
-   			 }
-            else if (data.type === 'PARTICIPANT_LIST') {
-                // 2. 참가자 목록 업데이트 (서버에서 점수순 정렬해서 줌)
+            } else if (data.type === 'ROOM_UPDATE' || data.type === 'PARTICIPANT_LIST') {
+                // ✨ 서버에서 최신 점수와 랭킹 정보를 받아 화면을 갱신합니다.
                 updateParticipants(data.participants);
             } else if (data.type === 'START') {
-                // 3. 게임 시작 처리
-                alert("게임이 시작되었습니다!");
+                // 게임 시작
                 document.getElementById('startBtn').style.display = 'none';
                 document.getElementById('ansInput').style.display = 'block';
-                document.getElementById('quizQuestion').innerText = "문제가 곧 출제됩니다!";
+                document.getElementById('quizQuestion').innerText = "문제가 곧 출제됩니다! (10초 대기)";
+
+                document.getElementById('quizTimer').innerText = "10";
+                document.getElementById('quizTimer').style.color = 'white';
+                startTimerDisplay(10, onInitialDelayEnd);
+            } else if (data.type === 'QUESTION') { // ⭐ data.type 필드를 체크
+                document.getElementById('quizTimer').innerText = "GO!";
+
+                // 서버 문제 텍스트 표시
+                document.getElementById('quizQuestion').innerHTML = data.questionText;
+
+                // ⭐ [수정] DTO에서 받은 timeLimit 값을 사용
+                const clientDuration = data.timeLimit || questionDuration;
+
+                // 문제 제한 시간 타이머 재시작
+                startTimerDisplay(clientDuration, onQuestionTimerEnd);
+            }
+            // ✨ 서버에서 문제 수신 (DB 문제)
+            else if (data.questionText) {
+                document.getElementById('quizTimer').innerText = "GO!";
+                // 서버 문제 텍스트 표시
+                document.getElementById('quizQuestion').innerHTML = data.questionText;
+
+                console.log(`[DEBUG_TIMER] questionDuration: ${questionDuration}`); // 현재 전역 변수 값
+    console.log(`[DEBUG_TIMER] Server Time Limit in Payload: ${data.timeLimit}`); // 서버가 보낸 값
+
+                const clientDuration = data.timeLimit || questionDuration;
+                // 타이머 재시작 (정답 입력 활성화)
+                startTimerDisplay(clientDuration, onQuestionTimerEnd);
+            }
+            // ✨ 정답 여부 피드백 (서버가 보내준다고 가정 - 구현 필요 시 서버 수정)
+            else if (data.type === 'ANSWER_RESULT') {
+                 if (data.isCorrect) {
+                     displayMessage({ sender: '[알림]', text: `🎉 정답입니다! (+${data.score}점)` });
+                 } else {
+                     displayMessage({ sender: '[알림]', text: `❌ 틀렸습니다.` });
+                 }
+            }
+            // ✨ 게임 종료
+            else if (data.type === 'GAME_END') {
+                    // ⭐⭐ [필수 수정] 서버가 보낸 최종 랭킹 데이터를 무조건 저장
+                 if (data.finalRanking) {
+                     // 서버에서 받은 확정된 랭킹 데이터로 로컬 스토리지를 덮어씁니다.
+                     sessionStorage.setItem('participants', JSON.stringify(data.finalRanking));
+                     console.log("✅ [GAME END] 서버 최종 랭킹 데이터 저장 완료.");
+                 } else {
+                     console.error("🚨 [GAME END] 최종 랭킹 데이터가 누락되었습니다.");
+                 }
+                 endGame();
             }
         };
     }
 
-function updateParticipants(participants) {
-    // 1. 데이터 확인 (null이면 빈 배열로 처리)
-    if (!participants) participants = [];
-
-    // 2. 리스트가 들어갈 영역 찾기
-    let listContainer = document.getElementById('p-list');
-    const wrapper = document.querySelector('.participant-area');
-
-    // ★ [핵심] 만약 p-list 태그가 없으면 다시 만들어줍니다 (복구 로직)
-    if (!listContainer) {
-        if (wrapper) {
-            // 제목(p-title)은 건드리지 않고 뒤에 추가
-            listContainer = document.createElement('div');
-            listContainer.id = 'p-list';
-            wrapper.appendChild(listContainer);
-        } else {
-            console.error("오류: .participant-area 태그도 찾을 수 없습니다.");
-            return;
-        }
+    // 10초 대기 타이머 종료 시 실행
+    function onInitialDelayEnd() {
+        document.getElementById('quizTimer').innerText = "WAITING...";
+        document.getElementById('quizQuestion').innerText = "문제를 불러오는 중...";
     }
 
-    // 3. 중복 제거 (닉네임 기준)
-    const uniqueParticipants = [];
-    const names = new Set();
-    participants.forEach(p => {
-        // 닉네임이 있고, 아직 등록되지 않은 이름만 추가
-        if (p.nickname && !names.has(p.nickname)) {
-            names.add(p.nickname);
-            uniqueParticipants.push(p);
-        }
-    });
+    // 문제 타이머 종료 시 실행
+    function onQuestionTimerEnd() {
+        document.getElementById('quizTimer').innerText = "TIME UP!";
+        document.getElementById('quizQuestion').innerText = "시간 종료! 다음 문제 준비 중...";
+        document.getElementById('ansInput').disabled = true; // 시간 종료 시 입력 불가
+    }
 
-    // 4. 참가자 수 업데이트
-    const countSpan = document.getElementById('p-count');
-    if (countSpan) countSpan.innerText = uniqueParticipants.length;
-
-    // 5. 화면 초기화 후 다시 그리기
-    listContainer.innerHTML = '';
-    
-    // 점수순 정렬
-    uniqueParticipants.sort((a, b) => b.score - a.score);
-
-    uniqueParticipants.forEach(p => {
-        const isMe = (p.nickname === myName);
-        const div = document.createElement('div');
-        
-        // 스타일 적용
-        div.style.padding = "10px";
-        div.style.borderBottom = "1px solid #46627f";
-        div.style.marginBottom = "5px";
-        
-        if (isMe) {
-            div.style.backgroundColor = "rgba(241, 196, 15, 0.1)"; 
-            div.style.borderLeft = "3px solid #f1c40f";
+    // 타이머 함수
+    function startTimerDisplay(durationSeconds, onTimerEnd) {
+        if (currentTimer) {
+            clearInterval(currentTimer);
         }
 
-        div.innerHTML = `
-            <div style="font-weight: ${isMe ? 'bold' : 'normal'}; color: ${isMe ? '#f1c40f' : '#ecf0f1'};">
-                ${p.nickname} ${isMe ? '(나)' : ''}
-            </div>
-            <div style="font-size: 0.85rem; color: #bdc3c7;">
-                Score: ${p.score}
-            </div>
-        `;
-        listContainer.appendChild(div);
-    });
-}
+        timeLeft = durationSeconds;
+        const timerElement = document.getElementById('quizTimer');
+
+        if(onTimerEnd === onQuestionTimerEnd) {
+            timerElement.style.color = '#f1c40f';
+            document.getElementById('ansInput').disabled = false; // 문제 시작 시 입력 활성화
+            document.getElementById('ansInput').focus();
+        }
+
+        currentTimer = setInterval(() => {
+            timerElement.innerText = timeLeft > 0 ? timeLeft : 0;
+
+            if (timeLeft <= 0) {
+                clearInterval(currentTimer);
+                currentTimer = null;
+                onTimerEnd();
+                return;
+            }
+
+            timeLeft--;
+        }, 1000);
+    }
+
+    // 게임 종료
+    function endGame() {
+        document.getElementById('quizTimer').innerText = "END";
+        document.getElementById('quizQuestion').innerHTML = "<h2>GAME OVER</h2>게임이 종료되었습니다! 잠시 후 결과 페이지로 이동합니다.";
+        document.getElementById('ansInput').style.display = 'none';
+
+        setTimeout(() => {
+            location.href = 'result.html';
+        }, 3000);
+    }
+
+    // 참가자 목록 및 점수 업데이트 (서버 데이터 기반)
+    function updateParticipants(participants) {
+        if (!participants) participants = [];
+
+        // 세션 저장 (결과 페이지용)
+        sessionStorage.setItem('participants', JSON.stringify(participants));
+
+        let listContainer = document.getElementById('p-list');
+        const wrapper = document.querySelector('.participant-area');
+
+        if (!listContainer) {
+            if (wrapper) {
+                listContainer = document.createElement('div');
+                listContainer.id = 'p-list';
+                wrapper.appendChild(listContainer);
+            } else return;
+        }
+
+        // 중복 제거
+        const uniqueParticipants = [];
+        const names = new Set();
+        participants.forEach(p => {
+            if (p.nickname && !names.has(p.nickname)) {
+                names.add(p.nickname);
+                uniqueParticipants.push(p);
+            }
+        });
+
+        document.getElementById('p-count').innerText = uniqueParticipants.length;
+        listContainer.innerHTML = '';
+
+        // 점수순 정렬
+        uniqueParticipants.sort((a, b) => b.score - a.score);
+
+        uniqueParticipants.forEach(p => {
+            const isMe = (p.nickname === myName);
+            const div = document.createElement('div');
+            div.style.padding = "10px";
+            div.style.borderBottom = "1px solid #46627f";
+            div.style.marginBottom = "5px";
+
+            if (isMe) {
+                div.style.backgroundColor = "rgba(241, 196, 15, 0.1)";
+                div.style.borderLeft = "3px solid #f1c40f";
+            }
+
+            div.innerHTML = `
+                <div style="font-weight: ${isMe ? 'bold' : 'normal'}; color: ${isMe ? '#f1c40f' : '#ecf0f1'};">
+                    ${p.nickname} ${isMe ? '(나)' : ''}
+                </div>
+                <div style="font-size: 0.85rem; color: #bdc3c7;">
+                    Score: ${p.score}
+                </div>
+            `;
+            listContainer.appendChild(div);
+        });
+    }
 
     function displayMessage(msg) {
         const chatBox = document.getElementById("chatBox");
-        
-        // 시스템 메시지 (입장 알림 등)
+        // ... (기존과 동일) ...
         if (msg.sender === '[알림]') {
             chatBox.innerHTML += `<div class="system-msg"><span class="system-badge">${msg.text}</span></div>`;
         } else {
@@ -201,23 +308,29 @@ function updateParticipants(participants) {
         if (msg.trim() === "") return;
 
         socket.send(JSON.stringify({ type: 'CHAT', sender: myName, text: msg, roomId: roomId }));
+        displayMessage({ type: 'CHAT', sender: myName, text: msg });
         input.value = '';
     }
 
-    // 3. 게임 시작 요청 보내기
     function sendStartGame() {
-        // GameWebSocketHandler에서 START 타입 처리 로직 필요
         socket.send(JSON.stringify({ type: 'START', sender: myName, roomId: roomId }));
     }
 
+    // ✨ 정답 제출 로직 (서버로만 전송, 로컬 시뮬레이션 제거)
     function sendAnswer(inputElement) {
-        const answer = inputElement.value;
-        if(!answer) return;
-        
-        // 정답 제출 로직 (추후 구현)
-        // socket.send(JSON.stringify({ type: 'ANSWER', ... }));
-        
-        inputElement.value = ''; 
+        const answer = inputElement.value.trim();
+        // 비활성화 상태거나 답이 없으면 무시
+        if(!answer || document.getElementById('ansInput').disabled) return;
+
+        // 1. 서버로 정답 전송
+        socket.send(JSON.stringify({ type: 'ANSWER', sender: myName, text: answer, roomId: roomId }));
+
+        // 2. 입력창 비우기 (중복 제출 방지는 선택 사항)
+        inputElement.value = '';
+
+        // 3. 피드백: "제출됨" 정도만 표시하거나, 서버 응답(ANSWER_RESULT)을 기다림
+        // 현재는 서버가 즉답을 안 주므로 임시 표시
+        displayMessage({ sender: '[알림]', text: `답안 제출: ${answer}` });
     }
 </script>
 </body>

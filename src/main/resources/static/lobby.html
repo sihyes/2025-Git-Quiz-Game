@@ -138,6 +138,7 @@
             if (data.type === 'ROOM_LIST') {
                 updateRoomList(data.rooms); 
             }
+
         };
         socket.onerror = (err) => console.error("연결 실패:", err);
     }
