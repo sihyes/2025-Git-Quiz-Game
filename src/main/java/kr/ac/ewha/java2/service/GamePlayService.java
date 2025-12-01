@@ -21,6 +21,9 @@ public class GamePlayService {
     private final GameWebSocketHandler gameWebSocketHandler;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(5);//타이머 만들기에 사용
     private final Map<Long, ScheduledFuture<?>> roomTimers = new ConcurrentHashMap<>();
+    //다음 문제 3초 대기
+    final int INTERMISSION_DELAY_SECONDS = 5;
+    final int INITIAL_DELAY_SECONDS = 10;
 
     @Lazy
     public GamePlayService(QuestionRepository questionRepository, AppUserRepository appUserRepository, GameRoomService gameRoomService, GameWebSocketHandler gameWebSocketHandler) {
@@ -41,6 +44,8 @@ public class GamePlayService {
             endGame(roomId);
             return;
         }
+        room.getAnsweredUserIds().clear();//정답자 id 초기화
+
         gameWebSocketHandler.broadcastQuestion(roomId, currentQuestion, timeLimit);
         starQuestionTimer(roomId);
     }
@@ -74,8 +79,8 @@ public class GamePlayService {
             room.setCurrentQuestionIndex(0);
         }
 
-        // 10초로 고정된 대기 시간
-        final int INITIAL_DELAY_SECONDS = 10;
+
+
 
         // 시간이 만료 시 실행할 작업(Runnable) 정의
         Runnable task = () -> {
@@ -110,21 +115,44 @@ public class GamePlayService {
                 e.printStackTrace();
                 endGame(roomId);
             }
-
-
         };
 
         // scheduler를 사용하여 작업 예약 및 Future 객체 획득
         future = scheduler.schedule(
                 task,
                 countDown,
-                TimeUnit.SECONDS // timeLimit을 '초' 단위로 예약
+                TimeUnit.SECONDS // timeLimit을 초 단위로 예약
         );
 
         // roomTimers 맵에 저장
         roomTimers.put(roomId, future);
     }
+    //인터미션 타이머...
+    public void starIntermissionTimer(Long roomId) {
+        gameWebSocketHandler.broadcastIntermission(roomId, INTERMISSION_DELAY_SECONDS);
 
+        Runnable task = () -> {
+            try {
+                proceedToNextQuestion(roomId);
+            } catch (Exception e) {
+                System.out.println("[TIME ERROR]");
+                e.printStackTrace();
+                endGame(roomId);
+            }
+        };
+        ScheduledFuture<?> future = roomTimers.remove(roomId);
+        if (future != null) {
+            future.cancel(true);
+        }
+        future = scheduler.schedule(
+                task,
+                INTERMISSION_DELAY_SECONDS,
+                TimeUnit.SECONDS
+        );
+
+        // roomTimers 맵에 저장
+        roomTimers.put(roomId, future);
+    }
     //답 제출
     public boolean submitAnswer(Long roomId,Participant participant,  String submittedAnswer){
         try {
@@ -135,7 +163,13 @@ public class GamePlayService {
                 System.out.println("null 발생.. 문제 = +"+question);
                 return false;
             }
-            System.out.println("[디버그] 정답 체크 - Sumitted: "+submittedAnswer+", Answer: "+question.getAnswer());
+
+            if(room.getAnsweredUserIds().contains(participant.getUserId())){
+                System.out.println(participant.getNickname()+": 정답 이미 맞춤");
+                return false;
+            }
+
+            System.out.println("[디버그] 정답 체크 - Submitted: "+submittedAnswer+", Answer: "+question.getAnswer());
             boolean isCorrect = false;
             try {
                 isCorrect = checkSubmittedAnswer(participant, question, submittedAnswer);
@@ -148,18 +182,41 @@ public class GamePlayService {
                 int points = question.getScore();
                 calculateScore(participant, question, submittedAnswer);
                 appUserRepository.updateParticipantScore(participant.getUserId(), participant.getScore());
+                room.getAnsweredUserIds().add(participant.getUserId());
+                //모두 정답 맞혔는지 확인
+                if(checkAllParticipantsAnswered(room)){
+                    System.out.println("모든 참가자가 정답 제출");
+                    ScheduledFuture<?> currentTimer = roomTimers.get(roomId);
+                    if(currentTimer!=null){
+                        currentTimer.cancel(false);
+                    }
+                    starIntermissionTimer(roomId);
+
+                    return true;
+                }
                 System.out.println("✅ " + participant.getNickname() + " 정답! +" + points);
+
             }
             else{
                 System.out.println("❌ " + participant.getNickname() + " 오답 제출.");
+
             }
             return isCorrect;
+
         }catch (Exception e){
             System.out.println("Submit Answer Failed");
             e.printStackTrace();
             return false;
         }
 
+    }
+
+    //모든 참가자 정답 맞혔는지 확인
+    public boolean checkAllParticipantsAnswered(GameRoom room){
+        if(room.getCurrentParticipantCount()==room.getAnsweredUserIds().size()){
+            return true;
+        }
+        else return false;
     }
 
     //점수 계산
@@ -184,5 +241,4 @@ public class GamePlayService {
         room.setCurrentQuestionIndex(room.getCurrentQuestionIndex()+1);
         sendQuestion(roomId);
     }
-
 }

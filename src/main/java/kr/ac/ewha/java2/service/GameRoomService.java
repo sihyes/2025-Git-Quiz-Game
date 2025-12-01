@@ -112,5 +112,9 @@ public class GameRoomService {
             }
         }
     }
-
+    //방장 확인
+    public boolean isHost(Long roomId, Long userId){
+        GameRoom room = findRoomById(roomId);
+        return room.getHostId().equals(userId);
+    }
 }

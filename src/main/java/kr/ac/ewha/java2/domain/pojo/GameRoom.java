@@ -5,9 +5,7 @@ package kr.ac.ewha.java2.domain.pojo;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import kr.ac.ewha.java2.domain.entity.Question;
 
@@ -34,6 +32,8 @@ public class GameRoom {
 
     private List<Question> questions; // 이번 게임에서 사용할 문제 목록
     private int currentQuestionIndex; // 현재 문제 인덱스
+
+    private Set<Long> answeredUserIds = new HashSet<>();//정답자 id
 
     public GameRoom(Long roomId, String roomName, Long hostId, String hostNickname, int questionCount, int timeLimit, int maxParticipants) {
         this.roomId = roomId;

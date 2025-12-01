@@ -47,6 +47,7 @@
     let socket;
     let myName = sessionStorage.getItem('nickname') || 'Guest';
     let serverIP = sessionStorage.getItem('serverIP');
+    let isHost = false;
 
     const urlParams = new URLSearchParams(window.location.search);
     const roomId = urlParams.get('roomId');
@@ -74,7 +75,6 @@
 
         updateParticipants(getInitialParticipants());
 
-        // ★ 서버에서 방 설정을 로드하여 questionDuration과 questionLimit을 업데이트합니다.
         await fetchRoomInfo(serverIP, roomId);
 
         socket = new WebSocket(`ws://${serverIP}/ws/game/${roomId}`);
@@ -88,6 +88,14 @@
                 const roomInfo = await res.json();
                 questionDuration = roomInfo.timeLimitPerQuestion;
                 questionLimit = roomInfo.questionCount;
+
+                if (roomInfo.hostNickname === myName) {
+                    isHost = true;
+                    console.log("✅ 당신은 방장입니다.");
+                } else {
+                    document.getElementById('startBtn').style.display = 'none';
+                }
+
                 console.log(`✅ 방 설정 로드 완료: 시간 제한 ${questionDuration}초, 문제 수 ${questionLimit}개`);
             } else {
                 console.error(`방 설정 로드 실패. 상태: ${res.status}. 기본값 사용.`);
@@ -109,10 +117,8 @@
             if (data.type === 'CHAT') {
                 displayMessage(data);
             } else if (data.type === 'ROOM_UPDATE' || data.type === 'PARTICIPANT_LIST') {
-                // ✨ 서버에서 최신 점수와 랭킹 정보를 받아 화면을 갱신합니다.
                 updateParticipants(data.participants);
             } else if (data.type === 'START') {
-                // 게임 시작
                 document.getElementById('startBtn').style.display = 'none';
                 document.getElementById('ansInput').style.display = 'block';
                 document.getElementById('quizQuestion').innerText = "문제가 곧 출제됩니다! (10초 대기)";
@@ -120,44 +126,43 @@
                 document.getElementById('quizTimer').innerText = "10";
                 document.getElementById('quizTimer').style.color = 'white';
                 startTimerDisplay(10, onInitialDelayEnd);
-            } else if (data.type === 'QUESTION') { // ⭐ data.type 필드를 체크
-                document.getElementById('quizTimer').innerText = "GO!";
+            }
 
-                // 서버 문제 텍스트 표시
+            // ✨ [통일] QUESTION 메시지 처리 (data.type === 'QUESTION'만 사용)
+            else if (data.type === 'QUESTION' || data.questionText) {
+                document.getElementById('quizTimer').innerText = "GO!";
                 document.getElementById('quizQuestion').innerHTML = data.questionText;
 
-                // ⭐ [수정] DTO에서 받은 timeLimit 값을 사용
                 const clientDuration = data.timeLimit || questionDuration;
 
-                // 문제 제한 시간 타이머 재시작
                 startTimerDisplay(clientDuration, onQuestionTimerEnd);
             }
-            // ✨ 서버에서 문제 수신 (DB 문제)
-            else if (data.questionText) {
-                document.getElementById('quizTimer').innerText = "GO!";
-                // 서버 문제 텍스트 표시
-                document.getElementById('quizQuestion').innerHTML = data.questionText;
 
-                console.log(`[DEBUG_TIMER] questionDuration: ${questionDuration}`); // 현재 전역 변수 값
-    console.log(`[DEBUG_TIMER] Server Time Limit in Payload: ${data.timeLimit}`); // 서버가 보낸 값
-
-                const clientDuration = data.timeLimit || questionDuration;
-                // 타이머 재시작 (정답 입력 활성화)
-                startTimerDisplay(clientDuration, onQuestionTimerEnd);
-            }
-            // ✨ 정답 여부 피드백 (서버가 보내준다고 가정 - 구현 필요 시 서버 수정)
+            // ✨ [수정] ANSWER_RESULT 처리 (서버의 isCorrect, isHost, result=0/-1/points 에 의존)
             else if (data.type === 'ANSWER_RESULT') {
-                 if (data.isCorrect) {
+                // ⭐ 정답인 경우 (points > 0)
+                 if (data.isCorrect && data.score > 0) {
                      displayMessage({ sender: '[알림]', text: `🎉 정답입니다! (+${data.score}점)` });
-                 } else {
-                     displayMessage({ sender: '[알림]', text: `❌ 틀렸습니다.` });
                  }
+
             }
+
+            // ✨ [추가] INTERMISSION 시작 메시지 처리 (모두 정답을 맞춘 경우)
+            else if (data.type === 'INTERMISSION') {
+                const intermissionDuration = data.duration || 3;
+
+                document.getElementById('quizTimer').innerText = intermissionDuration;
+                document.getElementById('quizTimer').style.color = '#7dd8ff';
+                document.getElementById('quizQuestion').innerHTML = "<h2>다음 문제 준비 중...</h2>";
+
+                document.getElementById('ansInput').disabled = true;
+
+                startTimerDisplay(intermissionDuration, onIntermissionEnd);
+            }
+
             // ✨ 게임 종료
             else if (data.type === 'GAME_END') {
-                    // ⭐⭐ [필수 수정] 서버가 보낸 최종 랭킹 데이터를 무조건 저장
                  if (data.finalRanking) {
-                     // 서버에서 받은 확정된 랭킹 데이터로 로컬 스토리지를 덮어씁니다.
                      sessionStorage.setItem('participants', JSON.stringify(data.finalRanking));
                      console.log("✅ [GAME END] 서버 최종 랭킹 데이터 저장 완료.");
                  } else {
@@ -167,6 +172,7 @@
             }
         };
     }
+
 
     // 10초 대기 타이머 종료 시 실행
     function onInitialDelayEnd() {
@@ -179,6 +185,13 @@
         document.getElementById('quizTimer').innerText = "TIME UP!";
         document.getElementById('quizQuestion').innerText = "시간 종료! 다음 문제 준비 중...";
         document.getElementById('ansInput').disabled = true; // 시간 종료 시 입력 불가
+    }
+
+    // 인터미션 타이머 종료 시 실행 (서버에서 QUESTION 메시지가 올 것을 예상)
+    function onIntermissionEnd() {
+        // 타이머 종료 후, 다음 문제가 서버에서 오기 전까지 대기 상태 표시
+        document.getElementById('quizTimer').innerText = "LOADING...";
+        document.getElementById('quizQuestion').innerText = "서버로부터 다음 문제를 불러오는 중입니다.";
     }
 
     // 타이머 함수

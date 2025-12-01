@@ -1,6 +1,5 @@
 package kr.ac.ewha.java2.global.handler;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import kr.ac.ewha.java2.domain.entity.AppUser;
 import kr.ac.ewha.java2.domain.entity.Question;
@@ -9,10 +8,7 @@ import kr.ac.ewha.java2.domain.pojo.Participant;
 import kr.ac.ewha.java2.dto.NewQuestionResponseDto;
 import kr.ac.ewha.java2.service.GamePlayService;
 import kr.ac.ewha.java2.service.GameRoomService;
-import org.hibernate.QueryException;
-import org.hibernate.type.descriptor.java.ObjectJavaType;
 import org.springframework.stereotype.Component;
-import org.springframework.validation.beanvalidation.SpringValidatorAdapter;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -20,7 +16,6 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -184,6 +179,10 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 		//START 처리...
 
 		if("START".equalsIgnoreCase(type)){
+			if(userId==null||!gameRoomService.isHost(roomId, userId)){
+				System.out.println("방장이 아니므로 요청 차단. userId: "+userId);
+				return;
+			}
 			gamePlayService.startInitialDelayTimer(roomId);
 			broadcastToRoom(roomId, payload);
 			return;
@@ -255,10 +254,10 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 			msg.put("score", currentScore);
 			session.sendMessage(new TextMessage(objectMapper.writeValueAsString(msg)));
 		} catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+			throw new RuntimeException(e);
+		}
 
-    }
+	}
 	@Override
 	public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
 		Long roomId = sessionRoomMap.get(session);
@@ -295,6 +294,19 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 			return Long.parseLong(segments[segments.length - 1]); // 맨 마지막 숫자가 RoomId
 		} catch (Exception e) {
 			throw new IllegalArgumentException("잘못된 웹소켓 경로입니다: " + session.getUri());
+		}
+	}
+
+	public void broadcastIntermission(Long roomId, int intermissionDelaySeconds) {
+		Map<String, Object> msg = new HashMap<>();
+		msg.put("type", "INTERMISSION");
+		msg.put("duration", intermissionDelaySeconds);
+		try {
+			String jsonMsg = objectMapper.writeValueAsString(msg);
+			broadcastToRoom(roomId, jsonMsg);
+		} catch (IOException e) {
+			System.out.println("[ERROR] 인터미션"+roomId);
+			e.printStackTrace();
 		}
 	}
 }
