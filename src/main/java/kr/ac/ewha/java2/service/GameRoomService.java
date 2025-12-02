@@ -1,5 +1,6 @@
 package kr.ac.ewha.java2.service;
 
+import kr.ac.ewha.java2.domain.entity.AppUser;
 import kr.ac.ewha.java2.domain.pojo.GameRoom;
 import kr.ac.ewha.java2.domain.pojo.Participant;
 import kr.ac.ewha.java2.domain.repository.AppUserRepository;
@@ -117,4 +118,8 @@ public class GameRoomService {
         GameRoom room = findRoomById(roomId);
         return room.getHostId().equals(userId);
     }
+
+
+
+
 }

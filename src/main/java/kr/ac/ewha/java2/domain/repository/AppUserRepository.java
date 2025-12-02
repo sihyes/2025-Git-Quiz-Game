@@ -1,6 +1,7 @@
 package kr.ac.ewha.java2.domain.repository;
 
 import kr.ac.ewha.java2.domain.entity.AppUser;
+import kr.ac.ewha.java2.service.AppUserService;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -24,9 +25,6 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
     // 랭킹조회메서드 - 2. 내 등수 계산(내 점수보다 높은사람의수 +1)
     @Query("SELECT COUNT(u) + 1 FROM AppUser u WHERE u.score > :score")
     long calculateMyRank(@Param("score") int score);
-    //점수 업데이트...
-    @Modifying
-    @Transactional
-    @Query("UPDATE AppUser u SET u.score = :newScore WHERE u.id = :userId")
-    void updateParticipantScore(@Param("userId") Long userId, @Param("newScore") int newScore);
+
+
 }

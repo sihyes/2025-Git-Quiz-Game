@@ -100,7 +100,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 			e.printStackTrace();
 		}
 	}
-
+	//문제 브로드캐스트
 	public void broadcastQuestion(Long roomId, Question question, int timeLimit){
 		List<WebSocketSession> sessions = roomSessions.get(roomId);
 
@@ -111,10 +111,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
 				for (WebSocketSession s : sessions) {
 					if (s.isOpen()) {
-						try {
-							s.sendMessage(new TextMessage(jsonMsg));
-						} catch (Exception e) {
-						}
+						s.sendMessage(new TextMessage(jsonMsg));
 					}
 				}
 			} catch (Exception e) {
@@ -143,18 +140,6 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 		msg.put("finalRanking", finalRank);
 		try {
 			String jsonMsg = objectMapper.writeValueAsString(msg);
-			List<WebSocketSession> sessions = roomSessions.get(roomId);
-			if (sessions!=null){
-				for(WebSocketSession s: sessions){
-					if (s.isOpen()){
-						try {
-							s.sendMessage(new TextMessage(jsonMsg));
-						}catch (IOException e){
-							System.err.println("[ERROR] 결과 전송 실패 - 세션 ID: "+s.getId());
-						}
-					}
-				}
-			}
 			broadcastToRoom(roomId, jsonMsg);
 		} catch (IOException e) {
 			System.out.println("[ERROR] IO 오류"+roomId);
@@ -177,7 +162,6 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 		System.out.println("📩 게임방(" + roomId + ") 메시지: " + payload);
 
 		//START 처리...
-
 		if("START".equalsIgnoreCase(type)){
 			if(userId==null||!gameRoomService.isHost(roomId, userId)){
 				System.out.println("방장이 아니므로 요청 차단. userId: "+userId);
@@ -228,9 +212,6 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
 			return;
 		}
-
-
-
 		// ✅ 핵심: 같은 방에 있는 사람들에게만 메시지 전송 (브로드캐스트)
 		List<WebSocketSession> sessions = roomSessions.get(roomId);
 		if (sessions != null) {
