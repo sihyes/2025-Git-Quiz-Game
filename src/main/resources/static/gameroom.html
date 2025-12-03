@@ -109,6 +109,7 @@
         socket.onopen = () => {
             console.log("🎮 게임 서버 연결됨");
             socket.send(JSON.stringify({ type: 'JOIN', sender: myName, roomId: roomId }));
+            socket.send(JSON.stringify({ type: 'REQ_ROOM_INFO', sender: myName, roomId: roomId }));
         };
 
         socket.onmessage = function (event){
@@ -164,6 +165,8 @@
             else if (data.type === 'GAME_END') {
                  if (data.finalRanking) {
                      sessionStorage.setItem('participants', JSON.stringify(data.finalRanking));
+                     //게임 종료 플래그
+                     sessionStorage.setItem('isGameOver', 'true');
                      console.log("✅ [GAME END] 서버 최종 랭킹 데이터 저장 완료.");
                  } else {
                      console.error("🚨 [GAME END] 최종 랭킹 데이터가 누락되었습니다.");
@@ -237,7 +240,10 @@
     // 참가자 목록 및 점수 업데이트 (서버 데이터 기반)
     function updateParticipants(participants) {
         if (!participants) participants = [];
-
+        const isGameOver=sessionStorage.getItem('isGameOver')=='true';
+        if(isGameOver){
+            return;
+        }
         // 세션 저장 (결과 페이지용)
         sessionStorage.setItem('participants', JSON.stringify(participants));
 

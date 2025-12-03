@@ -282,6 +282,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 		Map<String, Object> msg = new HashMap<>();
 		msg.put("type", "INTERMISSION");
 		msg.put("duration", intermissionDelaySeconds);
+
 		try {
 			String jsonMsg = objectMapper.writeValueAsString(msg);
 			broadcastToRoom(roomId, jsonMsg);

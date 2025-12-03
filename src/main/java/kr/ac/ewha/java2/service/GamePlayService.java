@@ -66,8 +66,17 @@ public class GamePlayService {
             List<Participant> finalRank = new ArrayList<>(room.getParticipants().values());
             //점수 내림차순 정렬
             finalRank.sort(Comparator.comparing(Participant::getScore).reversed());
+            System.out.println("최종 참가자 수: "+finalRank.size());
+            //디버그용 출력문
+            for(Participant p: finalRank){
+                System.out.println(p.getNickname()+"의 점수: "+p.getScore());
+            }
             gameWebSocketHandler.broadcastGameEnd(roomId, finalRank);
-
+            try{
+                Thread.sleep(4000);
+            }catch (InterruptedException e){
+                Thread.currentThread().interrupt();
+            }
         }
     }
 
@@ -132,7 +141,6 @@ public class GamePlayService {
     //인터미션 타이머...
     public void starIntermissionTimer(Long roomId) {
         gameWebSocketHandler.broadcastIntermission(roomId, INTERMISSION_DELAY_SECONDS);
-
         Runnable task = () -> {
             try {
                 proceedToNextQuestion(roomId);
