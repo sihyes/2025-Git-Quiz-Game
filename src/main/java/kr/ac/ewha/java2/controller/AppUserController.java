@@ -6,7 +6,7 @@ import kr.ac.ewha.java2.domain.repository.AppUserRepository;
 import kr.ac.ewha.java2.service.AppUserService;
 
 import org.springframework.web.bind.annotation.*;
-
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -21,6 +21,16 @@ public class AppUserController {
         this.appUserService = appUserService;
         this.appUserRepository = appUserRepository;
     }
+
+    /**
+     * 랭킹(Leaderboard) 조회 API
+     * - 전체 유저 중 점수 상위 10명 반환
+     */
+    @GetMapping("/leaderboard")
+    public List<AppUser> getLeaderboard() {
+        return appUserRepository.findTop10ByOrderByScoreDesc();
+    }
+
 
     /**
      * 회원가입 API
