@@ -67,4 +67,10 @@ public class AppUserService {
     	long rank = appUserRepository.calculateMyRank(user.getScore());
     	return rank;
     }
+
+
+        /* 랭킹 조회 (Top 10) */
+    public java.util.List<AppUser> getLeaderboard() {
+        return appUserRepository.findTop10ByOrderByScoreDesc();
+    }
 }

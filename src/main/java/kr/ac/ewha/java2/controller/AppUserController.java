@@ -91,4 +91,12 @@ public class AppUserController {
     	return appUserService.getMyRank(user);
     	
     }
+
+        /**
+     * 랭킹 조회 API (Top 10)
+     */
+    @GetMapping("/leaderboard")
+    public java.util.List<AppUser> getLeaderboard() {
+        return appUserService.getLeaderboard();
+    }
 }
