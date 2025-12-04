@@ -120,7 +120,8 @@ public class GamePlayService {
         // 시간 만료 시 실행할 작업
         Runnable task = () -> {
             try {
-                proceedToNextQuestion(roomId);
+                System.out.println("제한 시간 지남 -> 인터미션");
+                starIntermissionTimer(roomId);
             } catch (Exception e) {
                 System.out.println("[TIME ERROR]");
                 e.printStackTrace();
@@ -140,7 +141,10 @@ public class GamePlayService {
     }
     //인터미션 타이머...
     public void starIntermissionTimer(Long roomId) {
-        gameWebSocketHandler.broadcastIntermission(roomId, INTERMISSION_DELAY_SECONDS);
+        GameRoom gameRoom = gameRoomService.findRoomById(roomId);
+        Question question = gameRoom.getCurrentQuestion();
+        String correctAnswer = question.getAnswer();
+        gameWebSocketHandler.broadcastIntermission(roomId, INTERMISSION_DELAY_SECONDS, correctAnswer);
         Runnable task = () -> {
             try {
                 proceedToNextQuestion(roomId);

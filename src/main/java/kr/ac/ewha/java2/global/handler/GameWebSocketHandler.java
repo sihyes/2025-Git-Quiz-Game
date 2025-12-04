@@ -158,7 +158,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 		Map<String, Object> data = objectMapper.readValue(payload, Map.class);
 		String type = (String) data.get("type");
 
-		// 메시지 내용을 살짝 열어봄 (로그용)
+		// 메시지 내용 (로그용)
 		System.out.println("📩 게임방(" + roomId + ") 메시지: " + payload);
 
 		//START 처리...
@@ -278,11 +278,11 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 		}
 	}
 
-	public void broadcastIntermission(Long roomId, int intermissionDelaySeconds) {
+	public void broadcastIntermission(Long roomId, int intermissionDelaySeconds, String correctAnswer) {
 		Map<String, Object> msg = new HashMap<>();
 		msg.put("type", "INTERMISSION");
 		msg.put("duration", intermissionDelaySeconds);
-
+		msg.put("correctAnswer", correctAnswer);
 		try {
 			String jsonMsg = objectMapper.writeValueAsString(msg);
 			broadcastToRoom(roomId, jsonMsg);

@@ -151,10 +151,12 @@
             // ✨ [추가] INTERMISSION 시작 메시지 처리 (모두 정답을 맞춘 경우)
             else if (data.type === 'INTERMISSION') {
                 const intermissionDuration = data.duration || 3;
+                const intermissionAnswer = data.correctAnswer;
 
                 document.getElementById('quizTimer').innerText = intermissionDuration;
                 document.getElementById('quizTimer').style.color = '#7dd8ff';
                 document.getElementById('quizQuestion').innerHTML = "<h2>다음 문제 준비 중...</h2>";
+                displayMessage({ sender: '[알림]', text: `정답: ${data.correctAnswer}` });// 인터미션때 정답 보여주기
 
                 document.getElementById('ansInput').disabled = true;
 
