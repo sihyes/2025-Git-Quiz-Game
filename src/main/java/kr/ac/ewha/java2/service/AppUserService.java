@@ -6,6 +6,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -66,5 +67,9 @@ public class AppUserService {
     public long getMyRank(AppUser user) {
     	long rank = appUserRepository.calculateMyRank(user.getScore());
     	return rank;
+    }
+
+    public List<AppUser> getTop10Leaderboard() {
+        return appUserRepository.findTop10ByOrderByScoreDesc();
     }
 }

@@ -1,34 +1,32 @@
--- 1. Git 初始化与配置
-INSERT INTO question (question_text, answer, score, category, optiona, optionb, optionc, optiond) 
-VALUES ('Git 저장소를 초기화하는 명령어는?', 'git init', 10, 'basic', 'git start', 'git init', 'git create', 'git new');
-
-INSERT INTO question (question_text, answer, score, category, optiona, optionb, optionc, optiond) 
-VALUES ('전역 사용자 이름을 설정하는 올바른 명령어는?', 'git config --global user.name "Name"', 10, 'basic', 'git setup user "Name"', 'git config --global user.name "Name"', 'git user --name "Name"', 'git global user "Name"');
-
--- 2. Staging & Committing
-INSERT INTO question (question_text, answer, score, category, optiona, optionb, optionc, optiond) 
-VALUES ('파일의 변경사항을 Staging Area에 추가하는 명령어는?', 'git add', 10, 'basic', 'git stage', 'git commit', 'git add', 'git push');
-
-INSERT INTO question (question_text, answer, score, category, optiona, optionb, optionc, optiond) 
-VALUES ('커밋 메시지와 함께 변경사항을 저장소에 기록하는 명령어는?', 'git commit -m "msg"', 15, 'basic', 'git save "msg"', 'git commit -m "msg"', 'git log "msg"', 'git record "msg"');
-
--- 3. Branching & Merging
-INSERT INTO question (question_text, answer, score, category, optiona, optionb, optionc, optiond) 
-VALUES ('새로운 브랜치 "feature"를 생성하고 해당 브랜치로 이동하는 명령어는?', 'git checkout -b feature', 20, 'command', 'git branch feature', 'git checkout feature', 'git checkout -b feature', 'git move feature');
-
-INSERT INTO question (question_text, answer, score, category, optiona, optionb, optionc, optiond) 
-VALUES ('현재 브랜치에 "dev" 브랜치를 병합(Merge)하는 명령어는?', 'git merge dev', 20, 'command', 'git combine dev', 'git merge dev', 'git join dev', 'git pull dev');
-
--- 4. Remote Repository
-INSERT INTO question (question_text, answer, score, category, optiona, optionb, optionc, optiond) 
-VALUES ('원격 저장소의 변경사항을 가져와서 현재 브랜치와 병합하는 명령어는?', 'git pull', 15, 'concept', 'git fetch', 'git push', 'git clone', 'git pull');
-
-INSERT INTO question (question_text, answer, score, category, optiona, optionb, optionc, optiond) 
-VALUES ('원격 저장소의 이름이 "origin"일 때, master 브랜치로 코드를 업로드하는 명령어는?', 'git push origin master', 15, 'command', 'git upload origin master', 'git push origin master', 'git send origin master', 'git commit origin master');
-
--- 5. Advanced
-INSERT INTO question (question_text, answer, score, category, optiona, optionb, optionc, optiond) 
-VALUES ('직전 커밋 메시지를 수정하고 싶을 때 사용하는 옵션은?', '--amend', 30, 'advanced', '--fix', '--change', '--amend', '--modify');
-
-INSERT INTO question (question_text, answer, score, category, optiona, optionb, optionc, optiond) 
-VALUES ('Git의 작업 트리 상태를 확인하는 명령어는?', 'git status', 10, 'basic', 'git info', 'git check', 'git status', 'git state');
+TRUNCATE TABLE question;
+INSERT INTO question (question_text, answer, score) VALUES
+                                                        ('저장소를 초기화하는 명령어: git __', 'init', 5),
+                                                        ('파일을 스테이징 영역에 추가하는 명령어: git ___ <file>', 'add', 5),
+                                                        ('모든 변경 파일을 스테이징하는 명령어: git add ___', '.', 5),
+                                                        ('커밋 메시지를 포함하여 커밋하는 명령어: git commit ___ "message"', '-m', 5),
+                                                        ('새 브랜치를 생성하는 명령어: git ___ <branch>', 'branch', 5),
+                                                        ('현재 브랜치에서 다른 브랜치를 현재 브랜치로 병합하는 명령어: git ___ <branch>', 'merge', 5),
+                                                        ('브랜치를 삭제하는 명령어: git branch ___ <branch>', '-d', 5),
+                                                        ('현재 브랜치 이름을 출력하는 옵션: git branch --show- ___', 'current', 5),
+                                                        ('브랜치 이동 명령어: git ___ <branch>', 'switch', 5),
+                                                        ('스테이징된 파일과 마지막 커밋의 차이를 보여주는 명령어: git diff ___', '--staged', 5),
+                                                        ('Git이 추적하지 않는 파일을 강제로 삭제하는 명령어: git ___ ___', 'clean -f', 10),
+                                                        ('브랜치 이름을 변경하는 명령어: git ___ ___ <old> <new>', 'branch -m', 10),
+                                                        ('브랜치를 생성하면서 바로 이동하는 명령어: git ___ ___ <branch>', 'switch -c', 10),
+                                                        ('현재 작업 디렉토리의 상태를 확인하는 명령어:', 'git status', 10),
+                                                        ('워킹 디렉토리의 변경 내용을 확인하는 명령어:', 'git diff', 10),
+                                                        ('원격 저장소에서 특정 브랜치만 가져오려면 다음 중 빈칸에 들어갈 단어는? git fetch origin ____', 'main', 5),
+                                                        ('현재 연결된 원격 저장소 목록과 URL을 확인하는 명령어 옵션은? git remote ___', '-v', 5),
+                                                        ('원격 저장소에서 최신 커밋을 가져오되 로컬 브랜치를 수정하지 않는 명령어는? git ______', 'fetch', 5),
+                                                        ('원격 저장소의 최신 내용을 가져오고 자동으로 병합까지 수행하는 명령어는? git ____', 'pull', 5),
+                                                        ('로컬 변경 사항을 원격 저장소 main 브랜치로 업로드하는 명령어는? git ____ origin main', 'push', 5),
+                                                        ('커밋하지 않은 변경 사항을 임시로 저장하는 명령어는? git ______', 'stash', 10),
+                                                        ('등록된 원격 저장소 origin 을 삭제하는 명령어는? git remote ______ origin', 'remove', 5),
+                                                        ('원격 브랜치를 삭제할 때 사용하는 명령어는? git push origin --______ <브랜치명>', 'delete', 5),
+                                                        ('원격 저장소의 상세 정보(추적 브랜치 등)를 확인하는 명령어는? git remote ____ origin', 'show', 5),
+                                                        ('원격 저장소 URL을 변경하기 위한 명령어: git remote set-___ ____ <새 URL>', 'url origin', 5),
+                                                        ('원격 저장소를 추가하는 명령어: git ______ ______ <URL>', 'remote add', 10),
+                                                        ('원격 저장소 URL 변경: git remote ______-______ origin <새 URL>', 'set url', 10),
+                                                        ('원격 저장소의 별칭 목록을 확인하는 명령어는 git ______이다.', 'remote', 10),
+                                                        ('원격 저장소와 연결되어 있는 브랜치를 확인하려면 git ______ ______ 명령어를 사용한다.', 'branch -r', 10),
+                                                        ('특정 커밋의 변경 사항을 되돌리는 새로운 커밋을 생성하는 명령어: git ______ <commit_hash>', 'revert', 10);

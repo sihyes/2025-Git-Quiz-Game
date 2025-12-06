@@ -4,69 +4,87 @@
     <meta charset="UTF-8">
     <title>로비</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-	<link rel="stylesheet" href="./css/lobby.css">
+    <link rel="stylesheet" href="./css/lobby.css">
 </head>
 <body>
 
-    <header style="background: white; border-bottom: 1px solid #ddd;">
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
-            <a href="index.html" style="font-weight: bold; font-size: 1.2rem; color: #00664F;">Ctrl+Z : QUIZ SESSION</a>
-            <div>
-                <span id="header-user-name" style="font-weight:bold; margin-right:10px;"></span>
-                <button onclick="logout()" style="padding: 5px 10px; cursor: pointer;">로그아웃</button>
-            </div>
+<header style="background: white; border-bottom: 1px solid #ddd;">
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
+        <a href="index.html" style="font-weight: bold; font-size: 1.2rem; color: #00664F;">Ctrl+Z : QUIZ SESSION</a>
+        <div>
+            <span id="header-user-name" style="font-weight:bold; margin-right:10px;"></span>
+            <button onclick="logout()" style="padding: 5px 10px; cursor: pointer;">로그아웃</button>
         </div>
-    </header>
+    </div>
+</header>
 
-    <main class="main-layout">
-        
-        <aside class="sidebar">
-            <div id="user-section">
-                <div class="profile-section">
-                    <div class="profile-img">
-                        <i class="fa fa-user"></i>
-                    </div>
-                    <div class="user-name" id="profile-nickname">로딩중...</div>
-                    <div class="user-rank">Gold Tier</div>
+<main class="main-layout">
+
+    <aside class="sidebar">
+        <div id="user-section">
+            <div class="profile-section">
+                <div class="profile-img">
+                    <i class="fa fa-user"></i>
                 </div>
+                <div class="user-name" id="profile-nickname">로딩중...</div>
+                <div class="user-rank">Gold Tier</div>
+            </div>
 
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <span class="stat-label">누적 점수</span>
-                        <span class="stat-value" id="profile-score">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">랭킹</span>
-                        <!-- ✅ 수정: id="profile-rank" 추가 -->
-                        <span class="stat-value" id="profile-rank"># --</span>
-                    </div>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <span class="stat-label">누적 점수</span>
+                    <span class="stat-value" id="profile-score">0</span>
                 </div>
-
-                <button class="create-room-btn" onclick="tryCreateRoom()">
-                    <i class="fa fa-plus"></i> 방 만들기
-                </button>
-
-                                <!-- 랭킹 버튼 추가 -->
-                <button class="leaderboard-btn" onclick="location.href='leaderboard.html'" style="margin-top: 10px; width: 100%; padding: 12px; background-color: #f1c40f; color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: all 0.2s;">
-                    <i class="fa fa-trophy"></i> 랭킹 보기
-                </button>
+                <div class="stat-item">
+                    <span class="stat-label">랭킹</span>
+                    <!-- ✅ 수정: id="profile-rank" 추가 -->
+                    <span class="stat-value" id="profile-rank"># --</span>
+                </div>
             </div>
-        </aside>
 
-        <section class="content-area">
-            <div class="section-header">
-                <h2 class="section-title">진행 중인 퀴즈 방</h2>
-                <span style="color:#666; font-size:0.9rem;">실시간 업데이트 중</span>
-            </div>
-            <div class="room-grid" id="room-container"></div>
-            <div id="empty-message" class="empty-room hidden">
-                <i class="fa fa-inbox" style="font-size: 40px; margin-bottom: 10px;"></i>
-                <p>현재 생성된 방이 없습니다.<br>첫 번째 방을 만들어보세요!</p>
-            </div>
-        </section>
-    </main>
-    
-    <div id="createRoomModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:20px; border-radius:8px; box-shadow:0 0 10px rgba(0,0,0,0.5); z-index:1000;">
+            <button class="create-room-btn" onclick="tryCreateRoom()">
+                <i class="fa fa-plus"></i> 방 만들기
+            </button>
+
+            <!-- Leaderboard Button -->
+            <button class="leaderboard-btn" onclick="showLeaderboard()">
+                <i class="fa fa-trophy"></i> 랭킹 보기
+            </button>
+        </div>
+    </aside>
+
+    <section class="content-area">
+        <div class="section-header">
+            <h2 class="section-title">진행 중인 퀴즈 방</h2>
+            <span style="color:#666; font-size:0.9rem;">실시간 업데이트 중</span>
+        </div>
+        <div class="room-grid" id="room-container"></div>
+        <div id="empty-message" class="empty-room hidden">
+            <i class="fa fa-inbox" style="font-size: 40px; margin-bottom: 10px;"></i>
+            <p>현재 생성된 방이 없습니다.<br>첫 번째 방을 만들어보세요!</p>
+        </div>
+    </section>
+</main>
+<div id="leaderboardModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeLeaderboardModal()">&times;</span>
+        <h2 style="text-align:center; color:#00664F;"><i class="fa fa-trophy"></i> 명예의 전당</h2>
+        <table class="leaderboard-table">
+            <thead>
+            <tr>
+                <th>순위</th>
+                <th>닉네임</th>
+                <th>점수</th>
+            </tr>
+            </thead>
+            <tbody id="leaderboard-body">
+            <!-- Data will be populated here -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="createRoomModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:20px; border-radius:8px; box-shadow:0 0 10px rgba(0,0,0,0.5); z-index:1000;">
     <h3>방 만들기 설정</h3>
     <label>방 제목: <input type="text" id="mTitle" value="즐거운 퀴즈"></label><br><br>
     <label>문제 수: <input type="number" id="mQCount" value="10"></label><br><br>
@@ -127,6 +145,61 @@
         }
     }
 
+    async function showLeaderboard() {
+        const modal = document.getElementById('leaderboardModal');
+        const tbody = document.getElementById('leaderboard-body');
+        const serverIP = sessionStorage.getItem('serverIP');
+
+        modal.style.display = "block";
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">로딩중...</td></tr>';
+
+        try {
+            const res = await fetch(`http://${serverIP}/api/leaderboard`, { credentials: 'include' });
+            if (res.ok) {
+                const users = await res.json();
+                tbody.innerHTML = '';
+
+                if (users.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">데이터가 없습니다.</td></tr>';
+                    return;
+                }
+
+                users.forEach((user, index) => {
+                    let rankClass = '';
+                    if (index === 0) rankClass = 'rank-1';
+                    else if (index === 1) rankClass = 'rank-2';
+                    else if (index === 2) rankClass = 'rank-3';
+
+                    const row = `
+                        <tr>
+                            <td class="${rankClass}">${index + 1}</td>
+                            <td style="font-weight:bold;">${user.nickname}</td>
+                            <td>${user.score}</td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">불러오기 실패</td></tr>';
+            }
+        } catch (e) {
+            console.error(e);
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">에러 발생</td></tr>';
+        }
+    }
+
+    function closeLeaderboardModal() {
+        document.getElementById('leaderboardModal').style.display = "none";
+    }
+
+    // Close modal when clicking outside of it
+    window.onclick = function(event) {
+        const modal = document.getElementById('leaderboardModal');
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
+
     function logout() {
         sessionStorage.clear();
         location.href = 'index.html';
@@ -141,8 +214,9 @@
         socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
             if (data.type === 'ROOM_LIST') {
-                updateRoomList(data.rooms); 
+                updateRoomList(data.rooms);
             }
+
         };
         socket.onerror = (err) => console.error("연결 실패:", err);
     }
@@ -150,7 +224,7 @@
     function updateRoomList(rooms) {
         const container = document.getElementById('room-container');
         const emptyMsg = document.getElementById('empty-message');
-        
+
         container.innerHTML = '';
 
         if (!rooms || rooms.length === 0) {
@@ -162,7 +236,7 @@
         rooms.forEach(room => {
             const statusClass = room.status === 'WAITING' ? 'badge-waiting' : 'badge-playing';
             const statusText = room.status === 'WAITING' ? '대기중' : '게임중';
-            
+
             const cardHtml = `
             <div class="room-card">
                 <div class="room-header">
@@ -209,7 +283,7 @@
             const response = await fetch(`http://${serverIP}/api/rooms`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     title: title,
                     questionCount: qCount,
                     timeLimitPerQuestion: timeLimit,

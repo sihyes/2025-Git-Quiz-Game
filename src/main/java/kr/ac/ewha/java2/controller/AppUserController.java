@@ -101,4 +101,9 @@ public class AppUserController {
     	return appUserService.getMyRank(user);
     	
     }
+
+    @GetMapping("/rankings")
+    public List<AppUser> getLeaderboard() {
+        return appUserService.getTop10Leaderboard();
+    }
 }
