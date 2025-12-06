@@ -23,16 +23,6 @@ public class AppUserController {
     }
 
     /**
-     * 랭킹(Leaderboard) 조회 API
-     * - 전체 유저 중 점수 상위 10명 반환
-     */
-    @GetMapping("/leaderboard")
-    public List<AppUser> getLeaderboard() {
-        return appUserRepository.findTop10ByOrderByScoreDesc();
-    }
-
-
-    /**
      * 회원가입 API
      */
     @PostMapping("/signup")
