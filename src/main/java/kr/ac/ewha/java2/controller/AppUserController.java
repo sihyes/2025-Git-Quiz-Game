@@ -92,7 +92,7 @@ public class AppUserController {
     	
     }
 
-    @GetMapping("/rankings")
+    @GetMapping("/leaderboard")
     public List<AppUser> getLeaderboard() {
         return appUserService.getTop10Leaderboard();
     }
