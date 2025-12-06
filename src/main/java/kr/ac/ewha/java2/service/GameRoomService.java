@@ -1,18 +1,15 @@
 package kr.ac.ewha.java2.service;
 
 import kr.ac.ewha.java2.domain.entity.AppUser;
-import kr.ac.ewha.java2.domain.entity.Question;
 import kr.ac.ewha.java2.domain.pojo.GameRoom;
 import kr.ac.ewha.java2.domain.pojo.Participant;
-import kr.ac.ewha.java2.global.handler.LobbyWebSocketHandler; // 로비 알림용 핸들러
 import kr.ac.ewha.java2.domain.repository.AppUserRepository;
 import kr.ac.ewha.java2.domain.repository.QuestionRepository;
 import kr.ac.ewha.java2.dto.CreateRoomRequestDto;
-
+import kr.ac.ewha.java2.global.handler.LobbyWebSocketHandler;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -40,16 +37,19 @@ public class GameRoomService {
      */
     public GameRoom createRoom(CreateRoomRequestDto request, Long hostId, String hostNickname) {
         long roomId = roomIdCounter.getAndIncrement();
-        
+        int questionCount = request.getQuestionCount();
+        int timelimit = request.getTimeLimitPerQuestion();
+        int maxParticipants = request.getMaxParticipants();
+        System.out.println("방 설정: 문제수 - "+questionCount+" 제한시간 - "+timelimit+" 최대 인원 - "+maxParticipants);
         // 기본 설정: 문제 5개, 시간 10초
         GameRoom room = new GameRoom(
                 roomId, 
                 request.getTitle(), 
                 hostId, 
                 hostNickname,
-                request.getQuestionCount(), 
-                request.getTimeLimitPerQuestion(),
-                request.getMaxParticipants()
+                questionCount,
+                timelimit,
+                maxParticipants
         );
                 
         activeRooms.put(roomId, room);
@@ -113,4 +113,13 @@ public class GameRoomService {
             }
         }
     }
+    //방장 확인
+    public boolean isHost(Long roomId, Long userId){
+        GameRoom room = findRoomById(roomId);
+        return room.getHostId().equals(userId);
+    }
+
+
+
+
 }

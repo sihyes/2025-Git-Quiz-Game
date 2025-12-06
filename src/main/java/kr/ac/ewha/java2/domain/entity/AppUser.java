@@ -7,9 +7,12 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import kr.ac.ewha.java2.domain.repository.AppUserRepository;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.jpa.repository.support.SimpleJpaRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * DB에 저장되는 유저 정보 (JPA Entity)
@@ -44,4 +47,5 @@ public class AppUser {
         this.nickname = nickname;
         this.score = 0; // 신규 가입 시 0점
     }
+
 }
