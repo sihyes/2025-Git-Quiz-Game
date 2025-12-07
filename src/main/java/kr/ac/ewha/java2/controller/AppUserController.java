@@ -6,7 +6,7 @@ import kr.ac.ewha.java2.domain.repository.AppUserRepository;
 import kr.ac.ewha.java2.service.AppUserService;
 
 import org.springframework.web.bind.annotation.*;
-
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -90,5 +90,10 @@ public class AppUserController {
         
     	return appUserService.getMyRank(user);
     	
+    }
+
+    @GetMapping("/leaderboard")
+    public List<AppUser> getLeaderboard() {
+        return appUserService.getTop10Leaderboard();
     }
 }
