@@ -47,3 +47,16 @@
         .system-msg { text-align: center; color: #7f8c8d; font-size: 0.8rem; margin: 10px 0; clear: both; }
         .system-badge { background: #ddd; padding: 3px 10px; border-radius: 20px; }
         .clearfix::after { content: ""; clear: both; display: table; }
+
+        /*시작 후 타이머*/
+        .timer-display {
+            /* 폰트 크기를 키워 눈에 잘 띄게 함 */
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: #f1c40f; /* 눈에 띄는 색상 */
+            margin: 0 30px; /* 제목과 나가기 버튼 사이 여백 */
+            /* 타이머가 중앙에 위치하도록 정렬 */
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }

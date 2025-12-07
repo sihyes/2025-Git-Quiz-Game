@@ -72,4 +72,15 @@ public class AppUserService {
     public List<AppUser> getTop10Leaderboard() {
         return appUserRepository.findTop10ByOrderByScoreDesc();
     }
+    //점수 업데이트
+    @Transactional
+    public void updateScore(Long userId, int newScore){
+
+        AppUser user = appUserRepository.findById(userId).
+                orElseThrow(()->new IllegalStateException(userId+": 사용자 ID를 찾을 수 없음"));
+        user.setScore(user.getScore()+newScore);
+        System.out.println("Id: "+userId+" 점수 업데이트: +"+newScore);
+
+    }
+
 }
