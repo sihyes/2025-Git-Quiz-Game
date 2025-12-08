@@ -26,7 +26,16 @@ INSERT INTO question (question_text, answer, score) VALUES
                                                         ('원격 저장소의 상세 정보(추적 브랜치 등)를 확인하는 명령어는? git remote ____ origin', 'show', 5),
                                                         ('원격 저장소 URL을 변경하기 위한 명령어: git remote set-___ ____ <새 URL>', 'url origin', 5),
                                                         ('원격 저장소를 추가하는 명령어: git ______ ______ <URL>', 'remote add', 10),
-                                                        ('원격 저장소 URL 변경: git remote ______-______ origin <새 URL>', 'set url', 10),
                                                         ('원격 저장소의 별칭 목록을 확인하는 명령어는 git ______이다.', 'remote', 10),
                                                         ('원격 저장소와 연결되어 있는 브랜치를 확인하려면 git ______ ______ 명령어를 사용한다.', 'branch -r', 10),
-                                                        ('특정 커밋의 변경 사항을 되돌리는 새로운 커밋을 생성하는 명령어: git ______ <commit_hash>', 'revert', 10);
+                                                        ('특정 커밋의 변경 사항을 되돌리는 새로운 커밋을 생성하는 명령어: git ______ <commit_hash>', 'revert', 10),
+                                                        ('스테이징된 파일을 스테이징에서 제거하는 명령어: git reset ___ <file>', 'HEAD', 5),
+                                                        ('마지막 커밋 메시지를 수정하는 명령어: git commit ___', '--amend', 5),
+                                                        ('커밋 로그를 한줄 형식으로 출력하려면 git log ___ 옵션을 사용한다.', '--oneline', 5),
+                                                        ('스테이징된 모든 파일을 unstage하는 명령어: git ___ ___', 'reset HEAD', 5),
+                                                        ('특정 커밋으로 워킹 디렉토리를 되돌리는 명령어: git ___ <커밋해시>', 'checkout', 5),
+                                                        ('마지막 커밋을 취소하되 변경사항은 유지하려면 git reset ___ HEAD~1', '--soft', 10),
+                                                        ('마지막 커밋을 취소하고 변경사항도 버리려면 git reset ___ HEAD~1', '--hard', 10),
+                                                        ('Git이 특정 파일을 추적하지 않도록 제외하려면 ___ 파일에 규칙을 추가한다.', '.gitignore', 10),
+                                                        ('특정 파일을 변경 전 상태로 되돌리려면 git restore ___ <파일명>', '--staged', 10),
+                                                        ('특정 파일을 직전 커밋 상태로 되돌리려면 git restore ___ <파일명>', '--source', 10);
